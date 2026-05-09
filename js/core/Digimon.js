@@ -24,8 +24,7 @@ class Digimon {
         this.targetFood      = null;
         this.isEating        = false;
         this.eatTimer        = 0;
-        this.effectsReceived  = {}; // { cageId: true } — AP 효과 수령 기록
-        this.pendingTraining  = false; // 케이지 복귀 시 2틱 후 훈련 효과 예약
+        this.pendingEntry = false; // 케이지 진입 시 1회성 효과 예약 플래그
     }
 
     update() {

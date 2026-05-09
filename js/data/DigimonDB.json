@@ -12,7 +12,7 @@
         "moves": [
             { "name": "Angel Dust", "desc": "천사의 빛 먼지를 흩뿌려 공격한다.", "power": 10 }
         ],
-        "baseStats": { "hp": 10, "mp": 10, "atk": 10, "def": 10, "spd": 10 }
+        "baseStats": { "hp": 10, "mp": 10, "atk": 10, "def": 10, "int": 10, "spd": 10 }
     },
     "cupimon": {
         "no": 2,
@@ -27,7 +27,7 @@
         "moves": [
             { "name": "Angel Ring", "desc": "황금빛 링을 투척해 적을 공격한다.", "power": 18 }
         ],
-        "baseStats": { "hp": 20, "mp": 20, "atk": 20, "def": 20, "spd": 20 }
+        "baseStats": { "hp": 20, "mp": 20, "atk": 20, "def": 20, "int": 20, "spd": 20 }
     },
     "luxmon": {
         "no": 3,
@@ -43,7 +43,7 @@
             { "name": "Tiny Knuckle",  "desc": "강렬한 빛을 담아 주먹을 날린다.",        "power": 28 },
             { "name": "Cloud Barrier", "desc": "성스러운 구름으로 방어막을 형성한다.", "power": 0  }
         ],
-        "baseStats": { "hp": 30, "mp": 30, "atk": 30, "def": 30, "spd": 30 }
+        "baseStats": { "hp": 30, "mp": 30, "atk": 30, "def": 30, "int": 30, "spd": 30 }
     },
     "angelmon": {
         "no": 4,
@@ -58,7 +58,7 @@
         "moves": [
             { "name": "Heaven's Knuckle", "desc": "신성한 힘을 담은 필살 주먹 공격.", "power": 50 }
         ],
-        "baseStats": { "hp": 40, "mp": 40, "atk": 40, "def": 40, "spd": 40 }
+        "baseStats": { "hp": 40, "mp": 40, "atk": 40, "def": 40, "int": 40, "spd": 40 }
     },
     "piddomon": {
         "no": 5,
@@ -74,7 +74,7 @@
             { "name": "Fire Phaser", "desc": "화염 총기로 불꽃 빔을 발사한다.", "power": 45 },
             { "name": "Pid Speed",   "desc": "고속으로 돌진해 적을 제압한다.",  "power": 30 }
         ],
-        "baseStats": { "hp": 40, "mp": 40, "atk": 45, "def": 35, "spd": 45 }
+        "baseStats": { "hp": 40, "mp": 40, "atk": 45, "def": 35, "int": 40, "spd": 45 }
     },
     "darcmon": {
         "no": 6,
@@ -90,7 +90,7 @@
             { "name": "La Pucelle",    "desc": "성스러운 빛으로 강화한 검으로 베어낸다.", "power": 48 },
             { "name": "Dancing Sword", "desc": "유려한 검무로 연속 베기를 가한다.",       "power": 35 }
         ],
-        "baseStats": { "hp": 40, "mp": 40, "atk": 42, "def": 38, "spd": 42 }
+        "baseStats": { "hp": 40, "mp": 40, "atk": 42, "def": 38, "int": 40, "spd": 42 }
     },
     "magnaangemon": {
         "no": 7,
@@ -105,7 +105,7 @@
         "moves": [
             { "name": "Heaven's Gate", "desc": "이차원으로 통하는 문을 열어 적을 봉인한다.", "power": 75 }
         ],
-        "baseStats": { "hp": 50, "mp": 50, "atk": 50, "def": 50, "spd": 50 }
+        "baseStats": { "hp": 50, "mp": 50, "atk": 50, "def": 50, "int": 50, "spd": 50 }
     },
     "angewomon": {
         "no": 8,
@@ -121,6 +121,6 @@
             { "name": "Celestial Arrow", "desc": "황금빛 화살을 적에게 쏜다.",              "power": 65 },
             { "name": "Heaven's Charm",  "desc": "성스러운 기운으로 적의 의지를 꺾는다.", "power": 55 }
         ],
-        "baseStats": { "hp": 50, "mp": 50, "atk": 48, "def": 45, "spd": 52 }
+        "baseStats": { "hp": 50, "mp": 50, "atk": 48, "def": 45, "int": 50, "spd": 52 }
     }
 }

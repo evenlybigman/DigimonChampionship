@@ -4,23 +4,5 @@
         "name": "고기",
         "hunger": 40,
         "mood": 5
-    },
-    "fish": {
-        "id": "fish",
-        "name": "생선",
-        "hunger": 25,
-        "mood": 3
-    },
-    "candy": {
-        "id": "candy",
-        "name": "사탕",
-        "hunger": 10,
-        "mood": 15
-    },
-    "mushroom": {
-        "id": "mushroom",
-        "name": "버섯",
-        "hunger": 20,
-        "mood": 0
     }
 }

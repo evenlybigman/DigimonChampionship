@@ -1,11 +1,9 @@
 {
     "먹이": {
-        "meat":     { "id": "meat",     "name": "고기",   "price": 100, "desc": "" },
-        "fish":     { "id": "fish",     "name": "생선",   "price": 80,  "desc": "" },
-        "candy":    { "id": "candy",    "name": "사탕",   "price": 50,  "desc": "" },
-        "mushroom": { "id": "mushroom", "name": "버섯",   "price": 60,  "desc": "" }
+        "meat":     { "id": "meat",     "name": "고기",   "price": 100, "desc": "영양 만점인 고기. 배고파하면 먹여주자." },
+        "fish":     { "id": "fish",     "name": "생선",   "price": 80,  "desc": "" }
     },
-    "도핑약": {},
+    "약": {},
     "밴드":   {},
     "주사":   {},
     "기어": {

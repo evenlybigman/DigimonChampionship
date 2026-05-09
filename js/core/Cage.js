@@ -4,6 +4,10 @@ const AP_LABELS = {
     virus: '바이러스', vaccine: '백신', data: '데이터',
 };
 
+const STAT_LABELS = {
+    hp: 'HP', mp: 'MP', atk: '공격', def: '방어', int: '지능', spd: '속도',
+};
+
 class Cage {
     constructor(id) {
         const data = CAGE_DATA[id];
@@ -46,36 +50,72 @@ class Cage {
     // 매 2틱마다 GameManager에서 호출
     applyEffects() {
         this.digimonList.forEach(d => {
-            if (d.pendingTraining) {
-                const prevHp = d.currentStats.hp;
-                d.train();
-                const lost = prevHp - d.currentStats.hp;
-                if (lost > 0) game.addNotification(`${d.name}의 HP가 ${lost} 감소했습니다.`);
-                d.pendingTraining = false;
+            // 진입 시 1회성 효과 (training, ap)
+            if (d.pendingEntry) {
+                d.pendingEntry = false;
+                if (this.effect) {
+                    this._applyTraining(d);
+                    this._applyAp(d);
+                }
             }
 
-            if (!this.effect) return;
-            const hasAp = this.effect.some(e => e.type === 'ap');
-            this.effect.forEach(eff => {
-                if (eff.type === 'recover') {
-                    if (eff.stat === 'hp') {
-                        const maxHp = DIGIMON_DATA[d.id].baseStats.hp;
-                        const prev  = d.currentStats.hp;
-                        d.currentStats.hp = Math.min(maxHp, d.currentStats.hp + eff.amount);
-                        const healed = d.currentStats.hp - prev;
-                        if (healed > 0) {
-                            game.addNotification(`${d.name}의 HP가 ${healed} 회복됐습니다.`);
-                        }
-                    }
-                } else if (eff.type === 'ap') {
-                    if (d.ap && !d.effectsReceived[this.id]) {
-                        d.ap[eff.stat] = (d.ap[eff.stat] ?? 0) + eff.amount;
-                        const label = AP_LABELS[eff.stat] ?? eff.stat;
-                        game.addNotification(`${d.name}의 ${label} 속성이 ${eff.amount} 올랐습니다.`);
-                    }
-                }
-            });
-            if (hasAp) d.effectsReceived[this.id] = true;
+            // 지속 효과 (recover)
+            if (this.effect) {
+                this._applyRecover(d);
+            }
+        });
+    }
+
+    // 훈련 HP 비용 처리 — 현재 HP의 1/3 감소, 부족하면 false 반환
+    _spendTrainingHp(d) {
+        const cost = Math.floor(d.currentStats.hp / 3);
+        if (cost < 1) {
+            game.addNotification(`${d.name}의 HP가 부족해 훈련할 수 없습니다.`);
+            return false;
+        }
+        d.currentStats.hp -= cost;
+        game.addNotification(`${d.name}의 HP가 ${cost} 감소했습니다.`);
+        return true;
+    }
+
+    // 진입할 때마다 1회 — 스탯 상승 + HP 감소
+    _applyTraining(d) {
+        const effs = this.effect.filter(e => e.type === 'training');
+        if (effs.length === 0) return;
+        if (!this._spendTrainingHp(d)) return;
+
+        effs.forEach(eff => {
+            d.currentStats[eff.stat] = (d.currentStats[eff.stat] ?? 0) + eff.amount;
+            const label = STAT_LABELS[eff.stat] ?? eff.stat;
+            game.addNotification(`${d.name}의 ${label}이(가) ${eff.amount} 올랐습니다.`);
+        });
+    }
+
+    // 진입할 때마다 1회 — AP 속성 상승 + HP 감소 (훈련을 통해 얻음)
+    _applyAp(d) {
+        const effs = this.effect.filter(e => e.type === 'ap');
+        if (effs.length === 0) return;
+        if (!this._spendTrainingHp(d)) return;
+
+        effs.forEach(eff => {
+            d.ap[eff.stat] = (d.ap[eff.stat] ?? 0) + eff.amount;
+            const label = AP_LABELS[eff.stat] ?? eff.stat;
+            game.addNotification(`${d.name}의 ${label} 속성이 ${eff.amount} 올랐습니다.`);
+        });
+    }
+
+    // 2틱마다 지속 — 스탯 회복
+    _applyRecover(d) {
+        this.effect.filter(e => e.type === 'recover').forEach(eff => {
+            const max = DIGIMON_DATA[d.id].baseStats[eff.stat];
+            if (max === undefined) return;
+            const prev = d.currentStats[eff.stat];
+            d.currentStats[eff.stat] = Math.min(max, prev + eff.amount);
+            const healed = d.currentStats[eff.stat] - prev;
+            if (healed > 0) {
+                const label = STAT_LABELS[eff.stat] ?? eff.stat;
+                game.addNotification(`${d.name}의 ${label}이(가) ${healed} 회복됐습니다.`);
+            }
         });
     }
 }

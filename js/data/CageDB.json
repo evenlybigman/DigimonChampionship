@@ -11,19 +11,19 @@
     "mini_nurse": {
         "id": "mini_nurse",
         "name": "미니 간호실",
-        "size": 2,
+        "size": 1,
         "maxDigimon": 2,
         "image": "cage_mini_nurse.png",
         "effect": [{ "type": "recover", "stat": "hp", "amount": 5 }],
-        "tiles": [[0,0],[0,1]]
+        "tiles": [[0,0]]
     },
     "mini_flower": {
         "id": "mini_flower",
         "name": "미니 화원",
-        "size": 2,
+        "size": 1,
         "maxDigimon": 2,
         "image": "cage_mini_flower.png",
         "effect": [{ "type": "ap", "stat": "holy", "amount": 20 }],
-        "tiles": [[0,0],[1,-1]]
+        "tiles": [[0,0]]
     }
 }

@@ -19,6 +19,16 @@ const PANEL_Y = 10;
 const PANEL_W = 290;
 const PANEL_H = 440;
 
+// 헥스 엣지 i → 인접 타일 방향 (포인티-탑, 엣지 i는 vi→v(i+1))
+const HEX_EDGE_NEIGHBORS = [
+    [+1, -1], // 0: 우상
+    [+1,  0], // 1: 우
+    [ 0, +1], // 2: 우하
+    [-1, +1], // 3: 좌하
+    [-1,  0], // 4: 좌
+    [ 0, -1], // 5: 좌상
+];
+
 // 미니맵
 const MM_R    = 11;                      // 미니맵 헥스 반지름(px)
 const MM_X    = 995;                     // q=0,r=0 센터 X
@@ -139,7 +149,6 @@ class CageScene extends Phaser.Scene {
     _drawMap() {
         const gfx = this.mapGfx;
         gfx.clear();
-
         const wm = game.tamer.worldMap;
 
         for (let r = 0; r < 2; r++) {
@@ -147,30 +156,46 @@ class CageScene extends Phaser.Scene {
                 const wp = tileWorldPos(q, r);
                 const sx = worldToScreenX(wp.x, this.scrollX);
                 const sy = MAP_ROW_Y[r];
-
                 const entry = wm.getAt(q, r);
-                if (entry) {
-                    gfx.fillStyle(0x1a2a4a, 1);
-                    gfx.lineStyle(2, 0x4488cc, 1);
-                } else {
-                    gfx.fillStyle(0x111122, 0.7);
-                    gfx.lineStyle(1, 0x223344, 0.8);
-                }
 
-                gfx.beginPath();
+                // 헥스 꼭짓점 계산
+                const verts = [];
                 for (let i = 0; i < 6; i++) {
                     const a = (Math.PI / 3) * i - Math.PI / 2;
-                    const px = sx + HEX_R * Math.cos(a);
-                    const py = sy + HEX_R * Math.sin(a);
-                    i === 0 ? gfx.moveTo(px, py) : gfx.lineTo(px, py);
+                    verts.push([sx + HEX_R * Math.cos(a), sy + HEX_R * Math.sin(a)]);
                 }
+
+                // 채우기
+                gfx.fillStyle(entry ? 0x1a2a4a : 0x111122, entry ? 1 : 0.7);
+                gfx.beginPath();
+                verts.forEach(([px, py], i) => i === 0 ? gfx.moveTo(px, py) : gfx.lineTo(px, py));
                 gfx.closePath();
                 gfx.fillPath();
-                gfx.strokePath();
 
-                // 케이지 이름 — 앵커 타일에만 표시
-                if (entry && entry.anchorQ === q && entry.anchorR === r) {
-                    // 텍스트는 매 프레임 파괴/재생성 대신 update에서 처리
+                if (!entry) {
+                    // 빈 타일: 전체 테두리
+                    gfx.lineStyle(1, 0x223344, 0.8);
+                    gfx.beginPath();
+                    verts.forEach(([px, py], i) => i === 0 ? gfx.moveTo(px, py) : gfx.lineTo(px, py));
+                    gfx.closePath();
+                    gfx.strokePath();
+                } else {
+                    // 케이지 타일: 동일 케이지가 아닌 방향의 엣지만 그리기
+                    gfx.lineStyle(2, 0x4488cc, 1);
+                    for (let i = 0; i < 6; i++) {
+                        const [dq, dr] = HEX_EDGE_NEIGHBORS[i];
+                        const nq = ((q + dq) % TOTAL_COLS + TOTAL_COLS) % TOTAL_COLS;
+                        const nr = r + dr;
+                        const neighborEntry = (nr >= 0 && nr < 2) ? wm.getAt(nq, nr) : null;
+                        if (!neighborEntry || neighborEntry.cage !== entry.cage) {
+                            const [x0, y0] = verts[i];
+                            const [x1, y1] = verts[(i + 1) % 6];
+                            gfx.beginPath();
+                            gfx.moveTo(x0, y0);
+                            gfx.lineTo(x1, y1);
+                            gfx.strokePath();
+                        }
+                    }
                 }
             }
         }
@@ -204,11 +229,11 @@ class CageScene extends Phaser.Scene {
         let sprite;
         if (this.textures.exists(digimon.id)) {
             sprite = this.add.image(sx, sy, digimon.id).setScale(0.55).setDepth(3);
+            sprite.setInteractive({ useHandCursor: true, pixelPerfect: true });
         } else {
             sprite = this.add.rectangle(sx, sy, 46, 46, 0x334466).setDepth(3);
+            sprite.setInteractive({ useHandCursor: true });
         }
-
-        sprite.setInteractive({ useHandCursor: true });
         this.input.setDraggable(sprite);
         sprite.on('pointerdown', () => { this.selectedDigimon = digimon; });
 
@@ -298,8 +323,7 @@ class CageScene extends Phaser.Scene {
                 if (hit.cage.canAdd(entry.digimon)) {
                     hit.cage.addDigimon(entry.digimon);
 
-                    // 효과 있는 케이지 진입 시 2틱 후 훈련 예약
-                    if (hit.cage.effect) entry.digimon.pendingTraining = true;
+                    entry.digimon.pendingEntry = true;
 
                     entry.cage     = hit.cage;
                     entry.absTiles = game.tamer.worldMap.absoluteTiles(hit.cage.id, hit.anchorQ, hit.anchorR);
@@ -593,7 +617,7 @@ class CageScene extends Phaser.Scene {
             ``,
             `HP  ${s.hp}   MP  ${s.mp}`,
             `공격 ${s.atk}  방어 ${s.def}`,
-            `속도 ${s.spd}`,
+            `지능 ${s.int}  속도 ${s.spd}`,
             ``,
             `배고픔 ${d.hunger}`,
             `피로   ${d.fatigue}`,
