@@ -21,9 +21,9 @@ class Digimon {
             dragon: 0, beast: 0, bird: 0, plant: 0, water: 0,
             holy: 0, dark: 0, machine: 0, virus: 0, vaccine: 0, data: 0,
         };
-        this.foodQueue = [];   // 케이지에 넣은 먹이 목록
-        this.isEating = false; // 먹는 중 여부
-        this.eatTimer = 0;     // 먹는 데 걸리는 틱 카운트
+        this.targetFood = null; // 현재 이동 중이거나 먹는 먹이 참조
+        this.isEating   = false;
+        this.eatTimer   = 0;
     }
 
     update() {
@@ -38,17 +38,17 @@ class Digimon {
     }
 
     _eat() {
-        if (this.isEating) {
-            this.eatTimer--;
-            if (this.eatTimer <= 0) {
-                const food = this.foodQueue.shift();
-                this.hunger = Math.max(0, this.hunger - food.hunger);
-                this.mood   = Math.min(100, this.mood + food.mood);
-                this.isEating = false;
-            }
-        } else if (this.foodQueue.length > 0) {
-            this.isEating = true;
-            this.eatTimer = 5; // 5틱 동안 먹는 애니메이션
+        if (!this.isEating || !this.targetFood) return;
+
+        const food = this.targetFood;
+        this.hunger = Math.max(0, this.hunger - Math.ceil(food.data.hunger / 5));
+        this.mood   = Math.min(100, this.mood   + Math.ceil((food.data.mood ?? 0) / 5));
+        this.eatTimer--;
+
+        if (this.eatTimer <= 0) {
+            food.consumed   = true;
+            this.targetFood = null;
+            this.isEating   = false;
         }
     }
 

@@ -8,6 +8,11 @@ class Cage {
         this.image = data.image;
         this.effect = data.effect;         // null or array
         this.digimonList = [];
+        this.foods = []; // { data, x, y, eatenBy: null, consumed: false }
+    }
+
+    addFood(foodData, x, y) {
+        this.foods.push({ data: foodData, x, y, eatenBy: null, consumed: false });
     }
 
     get isFull() {

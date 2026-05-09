@@ -6,8 +6,10 @@ const CAGE_GAP     = 14;
 const CAGE_START_X = 20;
 const CAGE_START_Y = 100;
 
-const SPRITE_SPEED = 45; // px/s
-const SPRITE_PAD   = 28; // 케이지 벽에서 최소 거리
+const SPRITE_SPEED  = 45;  // px/s
+const SPRITE_PAD    = 28;  // 케이지 벽 최소 거리
+const EAT_REACH     = 20;  // 이 거리 이내면 먹기 시작
+const EAT_TICKS     = 5;
 
 const PANEL_X = 960;
 const PANEL_Y = 100;
@@ -17,13 +19,15 @@ const PANEL_H = 520;
 class CageScene extends Phaser.Scene {
     constructor() {
         super({ key: 'CageScene' });
-        this.elapsed         = 0;
-        this.cageZones       = []; // { cage, x, y, w, h, objects[] }
-        this.digimonSprites  = []; // { digimon, cage, sprite }
-        this.digimonPos      = new Map(); // digimon -> { x, y }
-        this.digimonTarget   = new Map(); // digimon -> { tx, ty }
-        this.draggingSprite  = null;
+        this.elapsed        = 0;
+        this.cageZones      = []; // { cage, x, y, w, h, objects[] }
+        this.digimonSprites = []; // { digimon, cage, sprite }
+        this.digimonPos     = new Map(); // digimon -> { x, y }
+        this.digimonTarget  = new Map(); // digimon -> { tx, ty }
+        this.foodSprites    = new Map(); // food obj -> sprite
+        this.draggingSprite = null;
         this.selectedDigimon = null;
+        this.feedMode       = false;
     }
 
     create() {
@@ -50,17 +54,16 @@ class CageScene extends Phaser.Scene {
         this.panelText   = this.add.text(PANEL_X + 10, PANEL_Y + 36, '', {
             fontSize: '18px', color: '#ffffff', lineSpacing: 10,
         });
-        this.panelApText = this.add.text(PANEL_X + 10, PANEL_Y + 300, '', {
+        this.panelApText = this.add.text(PANEL_X + 10, PANEL_Y + 280, '', {
             fontSize: '15px', color: '#aaddff', lineSpacing: 7,
         });
     }
 
     createButtons() {
         const buttons = [
-            { label: '먹이주기',    x: 80,  action: () => this.onFeed() },
-            { label: '휴식',        x: 230, action: () => this.onRest() },
-            { label: '훈련',        x: 350, action: () => this.onTrain() },
-            { label: '하루 끝내기', x: 470, action: () => this.onSkipDay() },
+            { label: '휴식',        x: 80,  action: () => this.onRest() },
+            { label: '훈련',        x: 200, action: () => this.onTrain() },
+            { label: '하루 끝내기', x: 320, action: () => this.onSkipDay() },
         ];
         buttons.forEach(btn => {
             const b = this.add.text(btn.x, 670, btn.label, {
@@ -70,6 +73,18 @@ class CageScene extends Phaser.Scene {
             b.on('pointerdown', btn.action);
             b.on('pointerover', () => b.setColor('#ffff00'));
             b.on('pointerout',  () => b.setColor('#ffffff'));
+        });
+
+        // 먹이 버튼 (토글)
+        this.feedBtn = this.add.text(500, 670, '먹이', {
+            fontSize: '22px', color: '#ffffff',
+            backgroundColor: '#333366', padding: { x: 14, y: 8 },
+        }).setInteractive({ useHandCursor: true });
+
+        this.feedBtn.on('pointerdown', () => {
+            this.feedMode = !this.feedMode;
+            this.feedBtn.setColor(this.feedMode ? '#ffff00' : '#ffffff');
+            this.feedBtn.setBackgroundColor(this.feedMode ? '#664400' : '#333366');
         });
     }
 
@@ -89,7 +104,16 @@ class CageScene extends Phaser.Scene {
             const zoneBg = this.add.rectangle(
                 cx + CAGE_W / 2, cy + CAGE_H / 2,
                 CAGE_W, CAGE_H, 0x1a1a3a, 0.8
-            ).setStrokeStyle(1, 0x3333aa);
+            ).setStrokeStyle(1, 0x3333aa).setInteractive();
+
+            zoneBg.on('pointerdown', (pointer) => {
+                if (!this.feedMode) return;
+                const inv = game.tamer.inventory;
+                const foodId = Object.keys(inv).find(k => inv[k] > 0);
+                if (!foodId) return;
+                inv[foodId]--;
+                cage.addFood(FOOD_DATA[foodId], pointer.worldX, pointer.worldY);
+            });
 
             const nameLabel = this.add.text(cx + 6, cy + 6, cage.name, {
                 fontSize: '14px', color: '#8888cc',
@@ -101,12 +125,8 @@ class CageScene extends Phaser.Scene {
             });
 
             cage.digimonList.forEach(d => {
-                // 위치 초기화 (처음 등장 시만)
                 if (!this.digimonPos.has(d)) {
-                    this.digimonPos.set(d, {
-                        x: cx + CAGE_W / 2,
-                        y: cy + CAGE_H / 2,
-                    });
+                    this.digimonPos.set(d, { x: cx + CAGE_W / 2, y: cy + CAGE_H / 2 });
                 }
                 this._pickNewTarget(d, cage);
                 this._createSprite(d, cage);
@@ -119,17 +139,14 @@ class CageScene extends Phaser.Scene {
 
         let sprite;
         if (this.textures.exists(digimon.id)) {
-            sprite = this.add.image(pos.x, pos.y, digimon.id).setScale(0.6);
+            sprite = this.add.image(pos.x, pos.y, digimon.id).setScale(0.6).setDepth(2);
         } else {
-            sprite = this.add.rectangle(pos.x, pos.y, 48, 48, 0x334466);
+            sprite = this.add.rectangle(pos.x, pos.y, 48, 48, 0x334466).setDepth(2);
         }
 
         sprite.setInteractive({ useHandCursor: true });
         this.input.setDraggable(sprite);
-
-        sprite.on('pointerdown', () => {
-            this.selectedDigimon = digimon;
-        });
+        sprite.on('pointerdown', () => { this.selectedDigimon = digimon; });
 
         this.digimonSprites.push({ digimon, cage, sprite });
     }
@@ -161,7 +178,7 @@ class CageScene extends Phaser.Scene {
 
         this.input.on('dragend', (pointer, sprite) => {
             this.draggingSprite = null;
-            sprite.setDepth(0);
+            sprite.setDepth(2);
 
             const entry = this.digimonSprites.find(e => e.sprite === sprite);
             if (!entry) return;
@@ -173,7 +190,6 @@ class CageScene extends Phaser.Scene {
                 pointer.y >= z.y && pointer.y <= z.y + z.h
             );
 
-            // 케이지 밖에 드롭 → 원래 케이지로 클램프
             const snapZone = targetZone ?? this.cageZones.find(z => z.cage === srcCage);
             if (!snapZone) return;
 
@@ -182,16 +198,20 @@ class CageScene extends Phaser.Scene {
 
             if (targetZone && targetZone.cage !== srcCage) {
                 if (!game.tamer.canAdd(digimon, targetZone.cage)) {
-                    // 이동 불가 → 원래 케이지 클램프
                     const srcZone = this.cageZones.find(z => z.cage === srcCage);
                     if (srcZone) {
                         const sx = Phaser.Math.Clamp(pointer.x, srcZone.x + SPRITE_PAD, srcZone.x + srcZone.w - SPRITE_PAD);
                         const sy = Phaser.Math.Clamp(pointer.y, srcZone.y + SPRITE_PAD, srcZone.y + srcZone.h - SPRITE_PAD);
                         this.digimonPos.set(digimon, { x: sx, y: sy });
                         sprite.setPosition(sx, sy);
-                        this._pickNewTarget(digimon, srcCage);
                     }
                     return;
+                }
+                // 케이지 이동 시 먹이 예약 해제
+                if (digimon.targetFood) {
+                    digimon.targetFood.eatenBy = null;
+                    digimon.targetFood = null;
+                    digimon.isEating   = false;
                 }
                 srcCage.removeDigimon(digimon);
                 targetZone.cage.addDigimon(digimon);
@@ -200,7 +220,6 @@ class CageScene extends Phaser.Scene {
                 return;
             }
 
-            // 같은 케이지 안 or 케이지 밖→복귀
             this.digimonPos.set(digimon, { x: clampedX, y: clampedY });
             sprite.setPosition(clampedX, clampedY);
             this._pickNewTarget(digimon, entry.cage);
@@ -214,6 +233,7 @@ class CageScene extends Phaser.Scene {
             game.onTick();
         }
         this._updateMovement(delta);
+        this._syncFoodSprites();
         this._updateHUD();
         this._updateStatsPanel();
     }
@@ -221,24 +241,74 @@ class CageScene extends Phaser.Scene {
     _updateMovement(delta) {
         this.digimonSprites.forEach(({ digimon, cage, sprite }) => {
             if (sprite === this.draggingSprite) return;
+            if (digimon.isEating) return;
 
-            const pos    = this.digimonPos.get(digimon);
+            const pos = this.digimonPos.get(digimon);
+            if (!pos) return;
+
+            // 이미 목표 먹이가 있으면 그쪽으로 이동
+            if (digimon.targetFood) {
+                const food = digimon.targetFood;
+                const dx = food.x - pos.x;
+                const dy = food.y - pos.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < EAT_REACH) {
+                    digimon.isEating = true;
+                    digimon.eatTimer = EAT_TICKS;
+                    return;
+                }
+
+                const step = SPRITE_SPEED * (delta / 1000);
+                pos.x += (dx / dist) * Math.min(step, dist);
+                pos.y += (dy / dist) * Math.min(step, dist);
+                sprite.setPosition(pos.x, pos.y);
+                return;
+            }
+
+            // 케이지에 아직 아무도 예약 안 한 먹이 탐색
+            const unclaimed = cage.foods.find(f => !f.eatenBy && !f.consumed);
+            if (unclaimed) {
+                unclaimed.eatenBy  = digimon;
+                digimon.targetFood = unclaimed;
+                return;
+            }
+
+            // 배회
             const target = this.digimonTarget.get(digimon);
-            if (!pos || !target) return;
+            if (!target) { this._pickNewTarget(digimon, cage); return; }
 
             const dx   = target.tx - pos.x;
             const dy   = target.ty - pos.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            if (dist < 4) {
-                this._pickNewTarget(digimon, cage);
-                return;
-            }
+            if (dist < 4) { this._pickNewTarget(digimon, cage); return; }
 
             const step = SPRITE_SPEED * (delta / 1000);
             pos.x += (dx / dist) * Math.min(step, dist);
             pos.y += (dy / dist) * Math.min(step, dist);
             sprite.setPosition(pos.x, pos.y);
+        });
+    }
+
+    _syncFoodSprites() {
+        // 소비된 먹이 스프라이트 제거
+        for (const [food, sprite] of this.foodSprites) {
+            if (food.consumed) {
+                sprite.destroy();
+                this.foodSprites.delete(food);
+            }
+        }
+
+        // 새 먹이 스프라이트 추가 + 소비된 먹이 배열에서 제거
+        game.tamer.cageList.forEach(cage => {
+            cage.foods = cage.foods.filter(f => !f.consumed);
+            cage.foods.forEach(food => {
+                if (!this.foodSprites.has(food)) {
+                    const s = this.add.circle(food.x, food.y, 7, 0xff6633).setDepth(1);
+                    this.foodSprites.set(food, s);
+                }
+            });
         });
     }
 
@@ -267,7 +337,6 @@ class CageScene extends Phaser.Scene {
             `기분     ${d.mood}`,
             `나이     ${d.age}일`,
             `케어실수 ${d.careMistakes}`,
-            `먹이 대기 ${d.foodQueue.length}개`,
         ].join('\n'));
 
         const ap = d.ap;
@@ -283,20 +352,7 @@ class CageScene extends Phaser.Scene {
         ].join('\n'));
     }
 
-    onFeed() {
-        game.tamer.digimonList.forEach(d => game.tamer.feedDigimon(d, 'meat'));
-    }
-
-    onRest() {
-        game.tamer.digimonList.forEach(d => d.rest());
-    }
-
-    onTrain() {
-        game.tamer.digimonList.forEach(d => d.train());
-    }
-
-    onSkipDay() {
-        game.skipDay();
-        this.buildScene();
-    }
+    onRest()    { game.tamer.digimonList.forEach(d => d.rest()); }
+    onTrain()   { game.tamer.digimonList.forEach(d => d.train()); }
+    onSkipDay() { game.skipDay(); this.buildScene(); }
 }
