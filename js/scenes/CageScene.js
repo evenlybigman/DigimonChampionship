@@ -191,12 +191,12 @@ class CageScene extends Phaser.Scene {
                     this.digimonWPos.set(d, { x: wp.x, y: wp.y });
                 }
                 this._pickTarget(d, cage, absTiles);
-                this._createSprite(d, cage);
+                this._createSprite(d, cage, absTiles);
             });
         });
     }
 
-    _createSprite(digimon, cage) {
+    _createSprite(digimon, cage, absTiles) {
         const wp = this.digimonWPos.get(digimon);
         const sx = worldToScreenX(wp.x, this.scrollX);
         const sy = MAP_ROW_Y[0] + wp.y; // wp.y relative from r=0
@@ -212,7 +212,7 @@ class CageScene extends Phaser.Scene {
         this.input.setDraggable(sprite);
         sprite.on('pointerdown', () => { this.selectedDigimon = digimon; });
 
-        this.digimonSprites.push({ digimon, cage, sprite, trackedId: digimon.id });
+        this.digimonSprites.push({ digimon, cage, sprite, trackedId: digimon.id, absTiles });
     }
 
     _pickTarget(digimon, cage, absTiles) {
@@ -443,8 +443,25 @@ class CageScene extends Phaser.Scene {
         }
     }
 
+    _clampToCage(wp, absTiles) {
+        const inside = absTiles.some(([tq, tr]) => {
+            const tp = tileWorldPos(tq, tr);
+            return Math.hypot(wp.x - tp.x, wp.y - tp.y) < HEX_R * 0.9;
+        });
+        if (inside) return;
+
+        // 가장 가까운 타일 중심으로 스냅
+        let nearest = null, nearestDist = Infinity;
+        absTiles.forEach(([tq, tr]) => {
+            const tp   = tileWorldPos(tq, tr);
+            const dist = Math.hypot(wp.x - tp.x, wp.y - tp.y);
+            if (dist < nearestDist) { nearestDist = dist; nearest = tp; }
+        });
+        if (nearest) { wp.x = nearest.x; wp.y = nearest.y; }
+    }
+
     _updateMovement(delta) {
-        this.digimonSprites.forEach(({ digimon, cage, sprite }) => {
+        this.digimonSprites.forEach(({ digimon, cage, sprite, absTiles }) => {
             if (sprite === this.draggingSprite) return;
 
             const wp = this.digimonWPos.get(digimon);
@@ -474,6 +491,7 @@ class CageScene extends Phaser.Scene {
                 const step = SPRITE_SPEED * (delta / 1000);
                 wp.x += (dx / dist) * Math.min(step, dist);
                 wp.y += (dy / dist) * Math.min(step, dist);
+                this._clampToCage(wp, absTiles);
                 sprite.setPosition(worldToScreenX(wp.x, this.scrollX), MAP_ROW_Y[0] + wp.y);
                 return;
             }
@@ -504,6 +522,7 @@ class CageScene extends Phaser.Scene {
             const step = SPRITE_SPEED * (delta / 1000);
             wp.x += (dx / dist) * Math.min(step, dist);
             wp.y += (dy / dist) * Math.min(step, dist);
+            this._clampToCage(wp, absTiles);
             sprite.setPosition(worldToScreenX(wp.x, this.scrollX), MAP_ROW_Y[0] + wp.y);
         });
     }
