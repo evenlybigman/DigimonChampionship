@@ -462,21 +462,11 @@ class CageScene extends Phaser.Scene {
         }
     }
 
-    _clampToCage(wp, absTiles) {
-        const inside = absTiles.some(([tq, tr]) => {
+    _isInsideCage(x, y, absTiles) {
+        return absTiles.some(([tq, tr]) => {
             const tp = tileWorldPos(tq, tr);
-            return Math.hypot(wp.x - tp.x, wp.y - tp.y) < HEX_R * 0.9;
+            return Math.hypot(x - tp.x, y - tp.y) < HEX_R;
         });
-        if (inside) return;
-
-        // 가장 가까운 타일 중심으로 스냅
-        let nearest = null, nearestDist = Infinity;
-        absTiles.forEach(([tq, tr]) => {
-            const tp   = tileWorldPos(tq, tr);
-            const dist = Math.hypot(wp.x - tp.x, wp.y - tp.y);
-            if (dist < nearestDist) { nearestDist = dist; nearest = tp; }
-        });
-        if (nearest) { wp.x = nearest.x; wp.y = nearest.y; }
     }
 
     _updateMovement(delta) {
@@ -508,9 +498,9 @@ class CageScene extends Phaser.Scene {
                     return;
                 }
                 const step = SPRITE_SPEED * (delta / 1000);
-                wp.x += (dx / dist) * Math.min(step, dist);
-                wp.y += (dy / dist) * Math.min(step, dist);
-                this._clampToCage(wp, absTiles);
+                const nx = wp.x + (dx / dist) * Math.min(step, dist);
+                const ny = wp.y + (dy / dist) * Math.min(step, dist);
+                this._applyMove(wp, nx, ny, absTiles);
                 sprite.setPosition(worldToScreenX(wp.x, this.scrollX), MAP_ROW_Y[0] + wp.y);
                 return;
             }
@@ -539,11 +529,30 @@ class CageScene extends Phaser.Scene {
                 return;
             }
             const step = SPRITE_SPEED * (delta / 1000);
-            wp.x += (dx / dist) * Math.min(step, dist);
-            wp.y += (dy / dist) * Math.min(step, dist);
-            this._clampToCage(wp, absTiles);
+            const nx = wp.x + (dx / dist) * Math.min(step, dist);
+            const ny = wp.y + (dy / dist) * Math.min(step, dist);
+            const moved = this._applyMove(wp, nx, ny, absTiles);
+            if (!moved) {
+                // 막혔으면 새 목표 선택
+                const entry = game.tamer.worldMap.placedCages.find(e => e.cage === cage);
+                if (entry) this._pickTarget(digimon, cage, absTiles);
+            }
             sprite.setPosition(worldToScreenX(wp.x, this.scrollX), MAP_ROW_Y[0] + wp.y);
         });
+    }
+
+    // 이동 적용 — 직진 → X슬라이드 → Y슬라이드 순으로 시도, 반환값: 이동 성공 여부
+    _applyMove(wp, nx, ny, absTiles) {
+        if (this._isInsideCage(nx, ny, absTiles)) {
+            wp.x = nx; wp.y = ny; return true;
+        }
+        if (this._isInsideCage(nx, wp.y, absTiles)) {
+            wp.x = nx; return true;
+        }
+        if (this._isInsideCage(wp.x, ny, absTiles)) {
+            wp.y = ny; return true;
+        }
+        return false;
     }
 
     _syncFoodSprites() {
