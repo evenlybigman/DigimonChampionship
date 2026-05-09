@@ -3,27 +3,42 @@ class Tamer {
         this.name = name;
         this.rank = 0;
         this.maxCapacity = 10;
-        this.cageList = [];
+        this.worldMap = new WorldMap();
+        this.cageInventory = []; // 배치 안 된 케이지
         this.inventory = {};
     }
 
-    // 모든 케이지에 있는 디지몬을 하나로 합쳐서 반환
+    // 배치된 케이지 + 인벤토리 케이지 전부
+    get cageList() {
+        return [
+            ...this.worldMap.placedCages.map(e => e.cage),
+            ...this.cageInventory,
+        ];
+    }
+
     get digimonList() {
         return this.cageList.flatMap(c => c.digimonList);
     }
 
     get usedCapacity() {
-        return this.digimonList.reduce((sum, d) => sum + d.capacity, 0);
+        return this.digimonList.reduce((s, d) => s + d.capacity, 0);
     }
 
-    addCage(cage) {
-        this.cageList.push(cage);
+    addCageToInventory(cage) {
+        this.cageInventory.push(cage);
+    }
+
+    placeCage(cage, anchorQ, anchorR) {
+        const idx = this.cageInventory.indexOf(cage);
+        if (idx === -1) return false;
+        if (!this.worldMap.place(cage, anchorQ, anchorR)) return false;
+        this.cageInventory.splice(idx, 1);
+        return true;
     }
 
     removeCage(cage) {
-        const idx = this.cageList.indexOf(cage);
-        if (idx === -1) return false;
-        this.cageList.splice(idx, 1);
+        if (!this.worldMap.remove(cage)) return false;
+        this.cageInventory.push(cage);
         return true;
     }
 
@@ -47,9 +62,8 @@ class Tamer {
     feedDigimon(digimon, foodId) {
         const count = this.inventory[foodId] ?? 0;
         if (count <= 0) return false;
-        const food = FOOD_DATA[foodId];
         this.inventory[foodId]--;
-        digimon.foodQueue.push(food);
+        digimon.foodQueue.push(FOOD_DATA[foodId]);
         return true;
     }
 }

@@ -3,7 +3,7 @@ const phaserConfig = {
     width: 1280,
     height: 720,
     backgroundColor: '#000000',
-    scene: [BootScene, TitleScene, CageScene, BattleScene],
+    scene: [BootScene, TitleScene, CageScene, CageSetupScene, BattleScene],
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,

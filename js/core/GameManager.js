@@ -5,17 +5,22 @@ class GameManager {
         this.gameHour = 7;
         this.gameMinute = 0;
         this.day = 1;
-        this.month = 1; // 1=봄, 2=여름, 3=가을, 4=겨울
+        this.month = 1;
     }
 
     start(tamerName) {
         this.tamer = new Tamer(tamerName);
 
         // --- 테스트용 ---
-        this.tamer.inventory = { meat: 5, fish: 5 };
+        this.tamer.inventory = { meat: 10, fish: 5 };
+
         const defaultCage = new Cage('default');
-        this.tamer.addCage(defaultCage);
+        this.tamer.addCageToInventory(defaultCage);
+        this.tamer.placeCage(defaultCage, 0, 0);
         this.tamer.addDigimon(new Digimon('putimon'), defaultCage);
+
+        this.tamer.addCageToInventory(new Cage('mini_nurse'));
+        this.tamer.addCageToInventory(new Cage('mini_flower'));
         // ----------------
     }
 
@@ -32,7 +37,8 @@ class GameManager {
                 this.gameMinute = 0;
                 this.onDayEnd();
             }
-            this.tamer.cageList.forEach(cage => cage.applyEffects());
+            // 배치된 케이지에만 효과 적용
+            this.tamer.worldMap.placedCages.forEach(e => e.cage.applyEffects());
             this.tamer.digimonList.forEach(digimon => {
                 digimon.update();
                 EvolutionSystem.check(digimon);
@@ -56,9 +62,7 @@ class GameManager {
     skipDay() {
         const TICKS_PER_DAY = 180;
         this.tamer.digimonList.forEach(d => {
-            for (let i = 0; i < TICKS_PER_DAY; i++) {
-                d.update();
-            }
+            for (let i = 0; i < TICKS_PER_DAY; i++) d.update();
         });
         this.gameHour   = 7;
         this.gameMinute = 0;
