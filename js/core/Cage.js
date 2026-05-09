@@ -1,3 +1,9 @@
+const AP_LABELS = {
+    dragon: '용', beast: '야수', bird: '조류', plant: '식물',
+    water: '수', holy: '성', dark: '암', machine: '기계',
+    virus: '바이러스', vaccine: '백신', data: '데이터',
+};
+
 class Cage {
     constructor(id) {
         const data = CAGE_DATA[id];
@@ -44,11 +50,17 @@ class Cage {
             this.effect.forEach(eff => {
                 if (eff.type === 'recover') {
                     if (eff.stat === 'hp') {
+                        const prev = d.fatigue;
                         d.fatigue = Math.max(0, d.fatigue - eff.amount);
+                        if (d.fatigue < prev) {
+                            game.addNotification(`${d.name}의 피로가 ${prev - d.fatigue} 회복됐습니다.`);
+                        }
                     }
                 } else if (eff.type === 'ap') {
                     if (d.ap) {
                         d.ap[eff.stat] = (d.ap[eff.stat] ?? 0) + eff.amount;
+                        const label = AP_LABELS[eff.stat] ?? eff.stat;
+                        game.addNotification(`${d.name}의 ${label} 속성이 ${eff.amount} 올랐습니다.`);
                     }
                 }
             });

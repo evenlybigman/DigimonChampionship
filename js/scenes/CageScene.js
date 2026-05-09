@@ -69,6 +69,7 @@ class CageScene extends Phaser.Scene {
         this.feedMode            = false;
         this.evolutionInProgress = false;
         this.minimapGfx          = null;
+        this.notifObjects        = []; // { textObj, createdAt }
     }
 
     create() {
@@ -319,6 +320,7 @@ class CageScene extends Phaser.Scene {
         this._updateHUD();
         this._updateStatsPanel();
         this._drawMiniMap();
+        this._processNotifications();
     }
 
     _drawCageLabels() {
@@ -353,6 +355,45 @@ class CageScene extends Phaser.Scene {
             },
             onComplete: launch,
         });
+    }
+
+    // ── 알림 ─────────────────────────────────────────────────────
+    _processNotifications() {
+        while (game.notifications.length > 0) {
+            const { text } = game.notifications.shift();
+            this._showNotification(text);
+        }
+
+        const now = Date.now();
+        this.notifObjects = this.notifObjects.filter(n => {
+            const age = now - n.createdAt;
+            if (age > 3500) { n.textObj.destroy(); return false; }
+            n.textObj.setAlpha(age > 2500 ? 1 - (age - 2500) / 1000 : 1);
+            return true;
+        });
+    }
+
+    _showNotification(text) {
+        const NOTIF_X = 20;
+        const NOTIF_BASE_Y = 630;
+        const LINE_H = 22;
+
+        // 기존 알림들 위로 올리기
+        this.notifObjects.forEach((n, i) => {
+            const targetY = NOTIF_BASE_Y - (this.notifObjects.length - i) * LINE_H;
+            n.textObj.setY(targetY);
+        });
+
+        const textObj = this.add.text(NOTIF_X, NOTIF_BASE_Y, text, {
+            fontSize: '13px', color: '#aaffcc',
+            stroke: '#000000', strokeThickness: 3,
+        }).setDepth(20);
+
+        this.notifObjects.push({ textObj, createdAt: Date.now() });
+        if (this.notifObjects.length > 5) {
+            const old = this.notifObjects.shift();
+            old.textObj.destroy();
+        }
     }
 
     // ── 미니맵 ────────────────────────────────────────────────────

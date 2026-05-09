@@ -7,6 +7,12 @@ class GameManager {
         this.day = 1;
         this.month = 1;
         this.pendingEvolutions = []; // { digimon, fromId, toId }
+        this.notifications     = []; // { text, time }
+    }
+
+    addNotification(text) {
+        this.notifications.push({ text, time: Date.now() });
+        if (this.notifications.length > 6) this.notifications.shift();
     }
 
     start(tamerName) {
