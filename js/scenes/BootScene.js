@@ -12,7 +12,8 @@ class BootScene extends Phaser.Scene {
         this.load.json('digimonDB', 'js/data/DigimonDB.json');
         this.load.json('foodDB',    'js/data/FoodDB.json');
         this.load.json('cageDB',    'js/data/CageDB.json');
-        this.load.json('itemDB',    'js/data/ItemDB.json');
+        this.load.json('itemDB',       'js/data/ItemDB.json');
+        this.load.json('evolutionDB',  'js/data/EvolutionDB.json');
         this.load.image('title-bg',  'assets/images/title/bg.png');
         this.load.image('btn-start', 'assets/images/title/btn-start.png');
         this.load.image('putimon',   'assets/images/sprites/digimon/putimon.png');
@@ -22,7 +23,8 @@ class BootScene extends Phaser.Scene {
         window.DIGIMON_DATA = this.cache.json.get('digimonDB');
         window.FOOD_DATA    = this.cache.json.get('foodDB');
         window.CAGE_DATA    = this.cache.json.get('cageDB');
-        window.ITEM_DATA    = this.cache.json.get('itemDB');
+        window.ITEM_DATA      = this.cache.json.get('itemDB');
+        window.EVOLUTION_TREE = this.cache.json.get('evolutionDB');
         this.scene.start('TitleScene');
     }
 }
