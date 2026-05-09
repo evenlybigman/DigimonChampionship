@@ -1,11 +1,12 @@
 {
     "putimon": {
+        "no": 1,
         "id": "putimon",
         "name": "푸티몬",
         "stage": "유아기",
         "level": 0,
-        "type": "Mini Angel",
-        "attribute": "none",
+        "type": "소천사형",
+        "attribute": null,
         "capacity": 1,
         "profile": "천사형 디지몬의 유아기. 작은 날개로 공중을 떠다니며 천사의 먼지를 흩뿌린다. 순수한 에너지로 가득 차 있어 강한 빛을 발산한다.",
         "moves": [
@@ -14,12 +15,13 @@
         "baseStats": { "hp": 10, "mp": 10, "atk": 10, "def": 10, "spd": 10 }
     },
     "cupimon": {
+        "no": 2,
         "id": "cupimon",
         "name": "큐피몬",
         "stage": "유년기",
         "level": 1,
-        "type": "Mini Angel",
-        "attribute": "none",
+        "type": "소천사형",
+        "attribute": null,
         "capacity": 2,
         "profile": "천사형 디지몬의 유년기. 황금빛 화살을 쏘는 능력을 지닌다. 명랑하고 장난기가 강하지만 전투에서는 진지해진다.",
         "moves": [
@@ -28,12 +30,13 @@
         "baseStats": { "hp": 20, "mp": 20, "atk": 20, "def": 20, "spd": 20 }
     },
     "luxmon": {
+        "no": 3,
         "id": "luxmon",
         "name": "럭스몬",
         "stage": "성장기",
         "level": 2,
-        "type": "Angel",
-        "attribute": "Vaccine",
+        "type": "천사형",
+        "attribute": "백신",
         "capacity": 10,
         "profile": "성스러운 빛을 다루는 천사형 성장기 디지몬. 작은 몸에 어울리지 않는 강인한 주먹과 방어막으로 아군을 수호한다.",
         "moves": [
@@ -43,12 +46,13 @@
         "baseStats": { "hp": 30, "mp": 30, "atk": 30, "def": 30, "spd": 30 }
     },
     "angelmon": {
+        "no": 4,
         "id": "angelmon",
         "name": "엔젤몬",
         "stage": "성숙기",
         "level": 3,
-        "type": "Angel",
-        "attribute": "Vaccine",
+        "type": "천사형",
+        "attribute": "백신",
         "capacity": 15,
         "profile": "정의와 희망의 화신으로 불리는 천사형 성숙기 디지몬. 여섯 장의 날개와 강철 같은 주먹으로 어둠의 디지몬을 물리친다.",
         "moves": [
@@ -57,12 +61,13 @@
         "baseStats": { "hp": 40, "mp": 40, "atk": 40, "def": 40, "spd": 40 }
     },
     "piddomon": {
+        "no": 5,
         "id": "piddomon",
         "name": "피드몬",
         "stage": "성숙기",
         "level": 3,
-        "type": "Angel",
-        "attribute": "Vaccine",
+        "type": "천사형",
+        "attribute": "백신",
         "capacity": 15,
         "profile": "불꽃을 다루는 천사형 성숙기 디지몬. 화염 총기로 적을 섬멸하며 뛰어난 기동력을 자랑한다.",
         "moves": [
@@ -72,12 +77,13 @@
         "baseStats": { "hp": 40, "mp": 40, "atk": 45, "def": 35, "spd": 45 }
     },
     "darcmon": {
+        "no": 6,
         "id": "darcmon",
         "name": "다르크몬",
         "stage": "성숙기",
         "level": 3,
-        "type": "Angel",
-        "attribute": "Vaccine",
+        "type": "천사형",
+        "attribute": "백신",
         "capacity": 15,
         "profile": "성녀의 혼을 지닌 천사형 성숙기 디지몬. 성스러운 검술로 적을 베고, 춤추듯 움직이는 검격이 특기다.",
         "moves": [
@@ -87,12 +93,13 @@
         "baseStats": { "hp": 40, "mp": 40, "atk": 42, "def": 38, "spd": 42 }
     },
     "magnaangemon": {
+        "no": 7,
         "id": "magnaangemon",
         "name": "홀리엔젤몬",
         "stage": "완전체",
         "level": 4,
-        "type": "High Angel",
-        "attribute": "Vaccine",
+        "type": "대천사형",
+        "attribute": "백신",
         "capacity": 21,
         "profile": "천사족 최강의 완전체 디지몬. 8장의 날개와 신성한 검으로 어둠을 정화하며, 이차원의 문을 여는 봉인 기술을 지닌다.",
         "moves": [
@@ -101,12 +108,13 @@
         "baseStats": { "hp": 50, "mp": 50, "atk": 50, "def": 50, "spd": 50 }
     },
     "angewomon": {
+        "no": 8,
         "id": "angewomon",
         "name": "엔젤우몬",
         "stage": "완전체",
         "level": 4,
-        "type": "High Angel",
-        "attribute": "Vaccine",
+        "type": "대천사형",
+        "attribute": "백신",
         "capacity": 21,
         "profile": "아름다움과 강인함을 겸비한 천사형 완전체 디지몬. 황금빛 화살과 성스러운 매력으로 악의 디지몬을 정화한다.",
         "moves": [
