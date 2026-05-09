@@ -298,8 +298,8 @@ class CageScene extends Phaser.Scene {
                 if (hit.cage.canAdd(entry.digimon)) {
                     hit.cage.addDigimon(entry.digimon);
 
-                    // 케이지 이동 시 2틱 후 훈련 효과 예약 (첫 방문 포함)
-                    entry.digimon.pendingTraining = true;
+                    // 효과 있는 케이지 진입 시 2틱 후 훈련 예약
+                    if (hit.cage.effect) entry.digimon.pendingTraining = true;
 
                     entry.cage     = hit.cage;
                     entry.absTiles = game.tamer.worldMap.absoluteTiles(hit.cage.id, hit.anchorQ, hit.anchorR);
