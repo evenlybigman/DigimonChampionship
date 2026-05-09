@@ -1,23 +1,30 @@
 const SEASONS = ['봄', '여름', '가을', '겨울'];
 
-const HEX_R        = 160;  // 정육각형 외접원 반지름
-const HEX_GAP      = 30;   // 케이지 간격
-const HEX_INNER_R  = HEX_R * Math.sqrt(3) / 2; // 내접원 반지름 (배회 범위 기준)
-const HEX_SPACING  = HEX_R * Math.sqrt(3) + HEX_GAP; // 중심 간 거리
-
+const HEX_TILE_R  = 80;                              // 타일 외접원 반지름
+const HEX_INSC_R  = HEX_TILE_R * Math.sqrt(3) / 2;  // 내접원 반지름 (≈69.3)
+const CAGE_GAP    = 40;
+const CAGE_START_X = 20;
 const CAGE_CENTER_Y = 370;
-const CAGE_START_CX = HEX_R + 20; // 첫 번째 케이지 중심 X
 
-const SPRITE_SPEED  = 45;
-const SPRITE_PAD    = 30;  // 내접원에서 추가 여백
-const EAT_REACH     = 20;
-const EAT_TICKS     = 5;
+const SPRITE_SPEED = 45;
+const SPRITE_PAD   = 14; // 내접원 안쪽 여백
+const EAT_REACH    = 20;
+const EAT_TICKS    = 5;
 
 const PANEL_X = 960;
 const PANEL_Y = 100;
 const PANEL_W = 300;
 const PANEL_H = 520;
 
+// axial 좌표 → 픽셀 오프셋 (pointy-top)
+function axialToPixel(q, r) {
+    return {
+        x: HEX_TILE_R * Math.sqrt(3) * (q + r / 2),
+        y: HEX_TILE_R * 1.5 * r,
+    };
+}
+
+// 정육각형 꼭짓점 배열 (절대 좌표, flat 배열)
 function makeHexPoints(cx, cy, r) {
     const pts = [];
     for (let i = 0; i < 6; i++) {
@@ -27,11 +34,29 @@ function makeHexPoints(cx, cy, r) {
     return pts;
 }
 
+// 케이지 타일 배열로 레이아웃 계산
+function buildCageLayout(tiles) {
+    const hw = HEX_TILE_R * Math.sqrt(3) / 2;
+    const hh = HEX_TILE_R;
+    const raw = tiles.map(([q, r]) => axialToPixel(q, r));
+    const minX = Math.min(...raw.map(c => c.x)) - hw;
+    const maxX = Math.max(...raw.map(c => c.x)) + hw;
+    const minY = Math.min(...raw.map(c => c.y)) - hh;
+    const maxY = Math.max(...raw.map(c => c.y)) + hh;
+    return {
+        relCenters: raw,                            // (0,0) 기준 타일 중심 오프셋
+        bboxCX: (minX + maxX) / 2,
+        bboxCY: (minY + maxY) / 2,
+        totalW: maxX - minX,
+        totalH: maxY - minY,
+    };
+}
+
 class CageScene extends Phaser.Scene {
     constructor() {
         super({ key: 'CageScene' });
         this.elapsed        = 0;
-        this.cageZones      = []; // { cage, cx, cy, geom, objects[] }
+        this.cageZones      = []; // { cage, tileCenters[], tileGeoms[], objects[] }
         this.digimonSprites = []; // { digimon, cage, sprite, trackedId }
         this.digimonPos     = new Map();
         this.digimonTarget  = new Map();
@@ -50,6 +75,7 @@ class CageScene extends Phaser.Scene {
         this.createButtons();
         this.buildScene();
         this.setupDrag();
+        this.setupFoodClick();
     }
 
     _createStatsPanel() {
@@ -107,44 +133,64 @@ class CageScene extends Phaser.Scene {
         const tamer = game.tamer;
         if (!tamer) return;
 
-        tamer.cageList.forEach((cage, i) => {
-            const cx = CAGE_START_CX + i * HEX_SPACING;
-            const cy = CAGE_CENTER_Y;
+        let curX = CAGE_START_X;
 
-            // 렌더링용 상대좌표 포인트 (add.polygon은 원점 기준)
-            const relPts = makeHexPoints(0, 0, HEX_R);
-            const hexObj = this.add.polygon(cx, cy, relPts, 0x1a1a3a, 0.9)
-                .setStrokeStyle(2, 0x4466cc, 1);
+        tamer.cageList.forEach((cage) => {
+            const cageData = CAGE_DATA[cage.id];
+            const layout   = buildCageLayout(cageData.tiles);
 
-            // 히트 테스트용 절대좌표 Geom
-            const geom = new Phaser.Geom.Polygon(makeHexPoints(cx, cy, HEX_R));
+            // (0,0) 타일의 월드 위치 = 바운딩박스 중심을 CAGE_CENTER_Y에 맞추는 오프셋
+            const originX = curX + layout.totalW / 2 - layout.bboxCX;
+            const originY = CAGE_CENTER_Y - layout.bboxCY;
 
-            hexObj.setInteractive(
-                new Phaser.Geom.Polygon(makeHexPoints(0, 0, HEX_R)),
-                Phaser.Geom.Polygon.Contains
+            // 각 타일의 월드 중심 좌표
+            const tileCenters = layout.relCenters.map(rc => ({
+                wx: originX + rc.x,
+                wy: originY + rc.y,
+            }));
+
+            // 히트 테스트용 Geom.Polygon 배열
+            const tileGeoms = tileCenters.map(tc =>
+                new Phaser.Geom.Polygon(makeHexPoints(tc.wx, tc.wy, HEX_TILE_R))
             );
-            hexObj.on('pointerdown', (pointer) => {
-                if (!this.feedMode) return;
-                const inv = game.tamer.inventory;
-                const foodId = Object.keys(inv).find(k => inv[k] > 0);
-                if (!foodId) return;
-                inv[foodId]--;
-                cage.addFood(FOOD_DATA[foodId], pointer.worldX, pointer.worldY);
+
+            // 타일 렌더링 (Graphics)
+            const gfx = this.add.graphics();
+            gfx.lineStyle(2, 0x4466cc, 1);
+            gfx.fillStyle(0x1a1a3a, 0.9);
+            tileCenters.forEach(tc => {
+                gfx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const a = (Math.PI / 3) * i - Math.PI / 2;
+                    const px = tc.wx + HEX_TILE_R * Math.cos(a);
+                    const py = tc.wy + HEX_TILE_R * Math.sin(a);
+                    i === 0 ? gfx.moveTo(px, py) : gfx.lineTo(px, py);
+                }
+                gfx.closePath();
+                gfx.fillPath();
+                gfx.strokePath();
             });
 
-            const nameLabel = this.add.text(cx, cy - HEX_R + 14, cage.name, {
-                fontSize: '14px', color: '#8899dd',
+            // 케이지 이름 레이블
+            const labelX = originX + layout.bboxCX;
+            const labelY  = CAGE_CENTER_Y - layout.totalH / 2 + 6;
+            const nameLabel = this.add.text(labelX, labelY, cageData.name, {
+                fontSize: '13px', color: '#8899dd',
             }).setOrigin(0.5, 0);
 
-            this.cageZones.push({ cage, cx, cy, geom, objects: [hexObj, nameLabel] });
+            this.cageZones.push({ cage, tileCenters, tileGeoms, objects: [gfx, nameLabel] });
 
             cage.digimonList.forEach(d => {
                 if (!this.digimonPos.has(d)) {
-                    this.digimonPos.set(d, { x: cx, y: cy });
+                    // 첫 등장: 중심 타일 위에 배치
+                    const mid = tileCenters[Math.floor(tileCenters.length / 2)];
+                    this.digimonPos.set(d, { x: mid.wx, y: mid.wy });
                 }
                 this._pickNewTarget(d, cage);
                 this._createSprite(d, cage);
             });
+
+            curX += layout.totalW + CAGE_GAP;
         });
     }
 
@@ -155,7 +201,7 @@ class CageScene extends Phaser.Scene {
         if (this.textures.exists(digimon.id)) {
             sprite = this.add.image(pos.x, pos.y, digimon.id).setScale(0.6).setDepth(2);
         } else {
-            sprite = this.add.rectangle(pos.x, pos.y, 48, 48, 0x334466).setDepth(2);
+            sprite = this.add.rectangle(pos.x, pos.y, 44, 44, 0x334466).setDepth(2);
         }
 
         sprite.setInteractive({ useHandCursor: true });
@@ -165,29 +211,57 @@ class CageScene extends Phaser.Scene {
         this.digimonSprites.push({ digimon, cage, sprite, trackedId: digimon.id });
     }
 
+    _findZoneAt(px, py) {
+        return this.cageZones.find(z =>
+            z.tileGeoms.some(g => Phaser.Geom.Polygon.Contains(g, px, py))
+        );
+    }
+
     _pickNewTarget(digimon, cage) {
         const zone = this.cageZones.find(z => z.cage === cage);
         if (!zone) return;
-        // 내접원 안쪽에서 랜덤 위치 (항상 육각형 내부 보장)
-        const maxR = HEX_INNER_R - SPRITE_PAD;
+        const tc    = Phaser.Utils.Array.GetRandom(zone.tileCenters);
+        const maxR  = HEX_INSC_R - SPRITE_PAD;
         const angle = Math.random() * Math.PI * 2;
         const dist  = Math.random() * maxR;
         this.digimonTarget.set(digimon, {
-            tx: zone.cx + Math.cos(angle) * dist,
-            ty: zone.cy + Math.sin(angle) * dist,
+            tx: tc.wx + Math.cos(angle) * dist,
+            ty: tc.wy + Math.sin(angle) * dist,
         });
     }
 
-    _clampToHex(zone, px, py) {
-        const dx   = px - zone.cx;
-        const dy   = py - zone.cy;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const maxR = HEX_INNER_R - SPRITE_PAD;
+    // 포인터 위치를 해당 케이지의 가장 가까운 타일 내접원으로 클램프
+    _clampToZone(zone, px, py) {
+        let nearestTC   = zone.tileCenters[0];
+        let nearestDist = Infinity;
+        zone.tileCenters.forEach(tc => {
+            const d = Math.hypot(px - tc.wx, py - tc.wy);
+            if (d < nearestDist) { nearestDist = d; nearestTC = tc; }
+        });
+        const dx   = px - nearestTC.wx;
+        const dy   = py - nearestTC.wy;
+        const dist = Math.hypot(dx, dy);
+        const maxR = HEX_INSC_R - SPRITE_PAD;
         if (dist <= maxR || dist === 0) return { x: px, y: py };
-        return {
-            x: zone.cx + (dx / dist) * maxR,
-            y: zone.cy + (dy / dist) * maxR,
-        };
+        return { x: nearestTC.wx + (dx / dist) * maxR, y: nearestTC.wy + (dy / dist) * maxR };
+    }
+
+    setupFoodClick() {
+        this.input.on('pointerdown', (pointer, currentlyOver) => {
+            if (!this.feedMode) return;
+            const onDigimon = this.digimonSprites.some(e => currentlyOver.includes(e.sprite));
+            if (onDigimon) return;
+
+            const zone = this._findZoneAt(pointer.x, pointer.y);
+            if (!zone) return;
+
+            const inv    = game.tamer.inventory;
+            const foodId = Object.keys(inv).find(k => inv[k] > 0);
+            if (!foodId) return;
+
+            inv[foodId]--;
+            zone.cage.addFood(FOOD_DATA[foodId], pointer.x, pointer.y);
+        });
     }
 
     setupDrag() {
@@ -214,16 +288,12 @@ class CageScene extends Phaser.Scene {
             if (!entry) return;
 
             const { digimon, cage: srcCage } = entry;
-            const srcZone = this.cageZones.find(z => z.cage === srcCage);
-
-            const targetZone = this.cageZones.find(z =>
-                Phaser.Geom.Polygon.Contains(z.geom, pointer.x, pointer.y)
-            );
+            const srcZone    = this.cageZones.find(z => z.cage === srcCage);
+            const targetZone = this._findZoneAt(pointer.x, pointer.y);
 
             if (targetZone && targetZone.cage !== srcCage) {
                 if (!game.tamer.canAdd(digimon, targetZone.cage)) {
-                    // 이동 불가 → 원래 케이지로 복귀
-                    const clamped = this._clampToHex(srcZone, pointer.x, pointer.y);
+                    const clamped = this._clampToZone(srcZone, pointer.x, pointer.y);
                     this.digimonPos.set(digimon, clamped);
                     sprite.setPosition(clamped.x, clamped.y);
                     return;
@@ -235,16 +305,15 @@ class CageScene extends Phaser.Scene {
                 }
                 srcCage.removeDigimon(digimon);
                 targetZone.cage.addDigimon(digimon);
-                const clamped = this._clampToHex(targetZone, pointer.x, pointer.y);
+                const clamped = this._clampToZone(targetZone, pointer.x, pointer.y);
                 this.digimonPos.set(digimon, clamped);
                 this.buildScene();
                 return;
             }
 
-            // 같은 케이지 or 케이지 밖 → 내접원 범위로 클램프
             const snapZone = targetZone ?? srcZone;
             if (!snapZone) return;
-            const clamped = this._clampToHex(snapZone, pointer.x, pointer.y);
+            const clamped = this._clampToZone(snapZone, pointer.x, pointer.y);
             this.digimonPos.set(digimon, clamped);
             sprite.setPosition(clamped.x, clamped.y);
             this._pickNewTarget(digimon, entry.cage);
@@ -279,7 +348,7 @@ class CageScene extends Phaser.Scene {
                 const food = digimon.targetFood;
                 const dx   = food.x - pos.x;
                 const dy   = food.y - pos.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
+                const dist = Math.hypot(dx, dy);
                 if (dist < EAT_REACH) {
                     digimon.isEating = true;
                     digimon.eatTimer = EAT_TICKS;
@@ -304,7 +373,7 @@ class CageScene extends Phaser.Scene {
 
             const dx   = target.tx - pos.x;
             const dy   = target.ty - pos.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
+            const dist = Math.hypot(dx, dy);
             if (dist < 4) { this._pickNewTarget(digimon, cage); return; }
 
             const step = SPRITE_SPEED * (delta / 1000);
@@ -316,10 +385,7 @@ class CageScene extends Phaser.Scene {
 
     _syncFoodSprites() {
         for (const [food, sprite] of this.foodSprites) {
-            if (food.consumed) {
-                sprite.destroy();
-                this.foodSprites.delete(food);
-            }
+            if (food.consumed) { sprite.destroy(); this.foodSprites.delete(food); }
         }
         game.tamer.cageList.forEach(cage => {
             cage.foods = cage.foods.filter(f => !f.consumed);
@@ -362,12 +428,10 @@ class CageScene extends Phaser.Scene {
         const ap = d.ap;
         this.panelApText.setText([
             '── AP ──',
-            `용    ${ap.dragon}    야수  ${ap.beast}`,
-            `조류  ${ap.bird}    식물  ${ap.plant}`,
-            `수중  ${ap.water}    성    ${ap.holy}`,
-            `암흑  ${ap.dark}    기계  ${ap.machine}`,
-            `바이러스 ${ap.virus}`,
-            `백신   ${ap.vaccine}`,
+            `용 ${ap.dragon}  야수 ${ap.beast}  조류 ${ap.bird}`,
+            `식물 ${ap.plant}  수중 ${ap.water}  성 ${ap.holy}`,
+            `암흑 ${ap.dark}  기계 ${ap.machine}`,
+            `바이러스 ${ap.virus}  백신 ${ap.vaccine}`,
             `데이터 ${ap.data}`,
         ].join('\n'));
     }

@@ -5,7 +5,8 @@
         "size": 4,
         "maxDigimon": null,
         "image": "cage_default.png",
-        "effect": null
+        "effect": null,
+        "tiles": [[0,0],[1,0],[-1,1],[0,1]]
     },
     "mini_nurse": {
         "id": "mini_nurse",
@@ -13,7 +14,8 @@
         "size": 2,
         "maxDigimon": 2,
         "image": "cage_mini_nurse.png",
-        "effect": [{ "type": "recover", "stat": "hp", "amount": 5 }]
+        "effect": [{ "type": "recover", "stat": "hp", "amount": 5 }],
+        "tiles": [[0,0],[0,1]]
     },
     "mini_flower": {
         "id": "mini_flower",
@@ -21,6 +23,7 @@
         "size": 2,
         "maxDigimon": 2,
         "image": "cage_mini_flower.png",
-        "effect": [{ "type": "ap", "stat": "holy", "amount": 20 }]
+        "effect": [{ "type": "ap", "stat": "holy", "amount": 20 }],
+        "tiles": [[0,0],[1,-1]]
     }
 }
