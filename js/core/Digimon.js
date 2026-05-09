@@ -7,7 +7,7 @@ class Digimon {
         this.type = data.type;
         this.attribute = data.attribute;
         this.capacity  = data.capacity;
-        this.specialMove = [...data.specialMove];
+        this.moves = data.moves.map(m => ({ ...m }));
         this.currentStats = { ...data.baseStats };
         this.hunger = 0;
         this.fatigue = 0;
@@ -69,7 +69,7 @@ class Digimon {
         this.attribute    = data.attribute;
         this.capacity     = data.capacity;
         this.currentStats = { ...data.baseStats };
-        this.specialMove  = [...data.specialMove];
+        this.moves        = data.moves.map(m => ({ ...m }));
         this.levelTicks   = 0;
     }
 }

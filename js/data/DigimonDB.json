@@ -2,81 +2,117 @@
     "putimon": {
         "id": "putimon",
         "name": "푸티몬",
+        "stage": "유아기",
         "level": 0,
         "type": "Mini Angel",
         "attribute": "none",
         "capacity": 1,
-        "specialMove": ["Angel Dust"],
+        "profile": "천사형 디지몬의 유아기. 작은 날개로 공중을 떠다니며 천사의 먼지를 흩뿌린다. 순수한 에너지로 가득 차 있어 강한 빛을 발산한다.",
+        "moves": [
+            { "name": "Angel Dust", "desc": "천사의 빛 먼지를 흩뿌려 공격한다.", "power": 10 }
+        ],
         "baseStats": { "hp": 10, "mp": 10, "atk": 10, "def": 10, "spd": 10 }
     },
     "cupimon": {
         "id": "cupimon",
         "name": "큐피몬",
+        "stage": "유년기",
         "level": 1,
         "type": "Mini Angel",
         "attribute": "none",
         "capacity": 2,
-        "specialMove": ["Angel Ring"],
+        "profile": "천사형 디지몬의 유년기. 황금빛 화살을 쏘는 능력을 지닌다. 명랑하고 장난기가 강하지만 전투에서는 진지해진다.",
+        "moves": [
+            { "name": "Angel Ring", "desc": "황금빛 링을 투척해 적을 공격한다.", "power": 18 }
+        ],
         "baseStats": { "hp": 20, "mp": 20, "atk": 20, "def": 20, "spd": 20 }
     },
     "luxmon": {
         "id": "luxmon",
         "name": "럭스몬",
+        "stage": "성장기",
         "level": 2,
         "type": "Angel",
         "attribute": "Vaccine",
         "capacity": 10,
-        "specialMove": ["Tiny Knuckle", "Cloud Barrier"],
+        "profile": "성스러운 빛을 다루는 천사형 성장기 디지몬. 작은 몸에 어울리지 않는 강인한 주먹과 방어막으로 아군을 수호한다.",
+        "moves": [
+            { "name": "Tiny Knuckle",  "desc": "강렬한 빛을 담아 주먹을 날린다.",        "power": 28 },
+            { "name": "Cloud Barrier", "desc": "성스러운 구름으로 방어막을 형성한다.", "power": 0  }
+        ],
         "baseStats": { "hp": 30, "mp": 30, "atk": 30, "def": 30, "spd": 30 }
     },
     "angelmon": {
         "id": "angelmon",
         "name": "엔젤몬",
+        "stage": "성숙기",
         "level": 3,
         "type": "Angel",
         "attribute": "Vaccine",
         "capacity": 15,
-        "specialMove": ["Heaven's Knuckle"],
+        "profile": "정의와 희망의 화신으로 불리는 천사형 성숙기 디지몬. 여섯 장의 날개와 강철 같은 주먹으로 어둠의 디지몬을 물리친다.",
+        "moves": [
+            { "name": "Heaven's Knuckle", "desc": "신성한 힘을 담은 필살 주먹 공격.", "power": 50 }
+        ],
         "baseStats": { "hp": 40, "mp": 40, "atk": 40, "def": 40, "spd": 40 }
     },
     "piddomon": {
         "id": "piddomon",
         "name": "피드몬",
+        "stage": "성숙기",
         "level": 3,
         "type": "Angel",
         "attribute": "Vaccine",
         "capacity": 15,
-        "specialMove": ["Fire Phaser", "Pid Speed"],
-        "baseStats": { "hp": 40, "mp": 40, "atk": 40, "def": 40, "spd": 40 }
+        "profile": "불꽃을 다루는 천사형 성숙기 디지몬. 화염 총기로 적을 섬멸하며 뛰어난 기동력을 자랑한다.",
+        "moves": [
+            { "name": "Fire Phaser", "desc": "화염 총기로 불꽃 빔을 발사한다.", "power": 45 },
+            { "name": "Pid Speed",   "desc": "고속으로 돌진해 적을 제압한다.",  "power": 30 }
+        ],
+        "baseStats": { "hp": 40, "mp": 40, "atk": 45, "def": 35, "spd": 45 }
     },
     "darcmon": {
         "id": "darcmon",
         "name": "다르크몬",
+        "stage": "성숙기",
         "level": 3,
         "type": "Angel",
         "attribute": "Vaccine",
         "capacity": 15,
-        "specialMove": ["La Pucelle", "Dancing Sword"],
-        "baseStats": { "hp": 40, "mp": 40, "atk": 40, "def": 40, "spd": 40 }
+        "profile": "성녀의 혼을 지닌 천사형 성숙기 디지몬. 성스러운 검술로 적을 베고, 춤추듯 움직이는 검격이 특기다.",
+        "moves": [
+            { "name": "La Pucelle",    "desc": "성스러운 빛으로 강화한 검으로 베어낸다.", "power": 48 },
+            { "name": "Dancing Sword", "desc": "유려한 검무로 연속 베기를 가한다.",       "power": 35 }
+        ],
+        "baseStats": { "hp": 40, "mp": 40, "atk": 42, "def": 38, "spd": 42 }
     },
     "magnaangemon": {
         "id": "magnaangemon",
         "name": "홀리엔젤몬",
+        "stage": "완전체",
         "level": 4,
         "type": "High Angel",
         "attribute": "Vaccine",
         "capacity": 21,
-        "specialMove": ["Heaven's Gate"],
+        "profile": "천사족 최강의 완전체 디지몬. 8장의 날개와 신성한 검으로 어둠을 정화하며, 이차원의 문을 여는 봉인 기술을 지닌다.",
+        "moves": [
+            { "name": "Heaven's Gate", "desc": "이차원으로 통하는 문을 열어 적을 봉인한다.", "power": 75 }
+        ],
         "baseStats": { "hp": 50, "mp": 50, "atk": 50, "def": 50, "spd": 50 }
     },
     "angewomon": {
         "id": "angewomon",
         "name": "엔젤우몬",
+        "stage": "완전체",
         "level": 4,
         "type": "High Angel",
         "attribute": "Vaccine",
         "capacity": 21,
-        "specialMove": ["Celestial Arrow", "Heaven's Charm"],
-        "baseStats": { "hp": 50, "mp": 50, "atk": 50, "def": 50, "spd": 50 }
+        "profile": "아름다움과 강인함을 겸비한 천사형 완전체 디지몬. 황금빛 화살과 성스러운 매력으로 악의 디지몬을 정화한다.",
+        "moves": [
+            { "name": "Celestial Arrow", "desc": "황금빛 화살을 적에게 쏜다.",              "power": 65 },
+            { "name": "Heaven's Charm",  "desc": "성스러운 기운으로 적의 의지를 꺾는다.", "power": 55 }
+        ],
+        "baseStats": { "hp": 50, "mp": 50, "atk": 48, "def": 45, "spd": 52 }
     }
 }
