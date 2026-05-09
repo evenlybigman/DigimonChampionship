@@ -5,7 +5,7 @@ const EvolutionSystem = {
 
         for (const path of paths) {
             if (this.meetsConditions(digimon, path.conditions)) {
-                digimon.evolve(path.to);
+                game.pendingEvolutions.push({ digimon, fromId: digimon.id, toId: path.to });
                 return;
             }
         }

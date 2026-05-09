@@ -6,6 +6,7 @@ class GameManager {
         this.gameMinute = 0;
         this.day = 1;
         this.month = 1;
+        this.pendingEvolutions = []; // { digimon, fromId, toId }
     }
 
     start(tamerName) {

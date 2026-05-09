@@ -19,6 +19,11 @@ const PANEL_Y = 10;
 const PANEL_W = 290;
 const PANEL_H = 380;
 
+// 미니맵
+const MM_R    = 11;                      // 미니맵 헥스 반지름(px)
+const MM_X    = 995;                     // q=0,r=0 센터 X
+const MM_Y    = 430;                     // r=0 센터 Y
+
 // 타일 (q,r) → 월드 픽셀 좌표
 function tileWorldPos(q, r) {
     return {
@@ -59,9 +64,11 @@ class CageScene extends Phaser.Scene {
         this.digimonWPos    = new Map(); // digimon → { x, y } (월드 좌표)
         this.digimonTarget  = new Map(); // digimon → { tx, ty } (월드 좌표)
         this.foodSprites    = new Map();
-        this.draggingSprite = null;
-        this.selectedDigimon = null;
-        this.feedMode       = false;
+        this.draggingSprite      = null;
+        this.selectedDigimon     = null;
+        this.feedMode            = false;
+        this.evolutionInProgress = false;
+        this.minimapGfx          = null;
     }
 
     create() {
@@ -72,12 +79,17 @@ class CageScene extends Phaser.Scene {
         this.dateText     = this.add.text(10, 10, '', { fontSize: '20px', color: '#ffffff' }).setDepth(10);
         this.capacityText = this.add.text(10, 36, '', { fontSize: '18px', color: '#aaaaaa' }).setDepth(10);
 
+        this.minimapGfx = this.add.graphics().setDepth(15);
+
         this._createStatsPanel();
         this._createButtons();
         this._buildDigimonSprites();
         this._setupScroll();
         this._setupDrag();
         this._setupFoodClick();
+
+        // EvolutionScene 종료 후 진화 완료 플래그 리셋
+        this.events.on('resume', () => { this.evolutionInProgress = false; });
     }
 
     _createStatsPanel() {
@@ -283,6 +295,12 @@ class CageScene extends Phaser.Scene {
 
     // ── 업데이트 루프 ─────────────────────────────────────────────
     update(time, delta) {
+        // 진화 큐 처리
+        if (game.pendingEvolutions.length > 0 && !this.evolutionInProgress) {
+            this.evolutionInProgress = true;
+            this._startEvolution(game.pendingEvolutions.shift());
+        }
+
         this.elapsed += delta;
         if (this.elapsed >= 1000) {
             this.elapsed = 0;
@@ -300,6 +318,7 @@ class CageScene extends Phaser.Scene {
         this._syncFoodSprites();
         this._updateHUD();
         this._updateStatsPanel();
+        this._drawMiniMap();
     }
 
     _drawCageLabels() {
@@ -307,6 +326,80 @@ class CageScene extends Phaser.Scene {
         // 씬에 text 오브젝트를 재생성하는 대신, 별도 텍스트 레이어를 한 번만 만들어 위치 업데이트
         // → 간단히 매 빌드 시 처리 (buildDigimonSprites 내에서 처리 가능)
         // 지금은 생략 — 케이지 설정 씬에서 확인 가능
+    }
+
+    // ── 진화 연출 ─────────────────────────────────────────────────
+    _startEvolution({ digimon, fromId, toId }) {
+        const wp = this.digimonWPos.get(digimon);
+        const launch = () => {
+            this.scene.launch('EvolutionScene', { digimon, fromId, toId });
+            this.scene.pause();
+        };
+
+        if (!wp) { launch(); return; }
+
+        const targetScrollX = ((wp.x - 640) % TOTAL_W + TOTAL_W) % TOTAL_W;
+        let delta = targetScrollX - this.scrollX;
+        if (delta >  TOTAL_W / 2) delta -= TOTAL_W;
+        if (delta < -TOTAL_W / 2) delta += TOTAL_W;
+
+        const startScrollX = this.scrollX;
+        const counter      = { t: 0 };
+        this.tweens.add({
+            targets: counter, t: 1,
+            duration: 700, ease: 'Cubic.easeInOut',
+            onUpdate: () => {
+                this.scrollX = ((startScrollX + delta * counter.t) % TOTAL_W + TOTAL_W) % TOTAL_W;
+            },
+            onComplete: launch,
+        });
+    }
+
+    // ── 미니맵 ────────────────────────────────────────────────────
+    _drawMiniMap() {
+        const gfx      = this.minimapGfx;
+        const colStep  = MM_R * Math.sqrt(3);
+        const rowStep  = MM_R * 1.5;
+        const bgLeft   = MM_X - colStep / 2 - 3;
+        const bgTop    = MM_Y - MM_R - 3;
+        const bgW      = TOTAL_COLS * colStep + 6;
+        const bgH      = rowStep + MM_R * 2 + 6;
+
+        gfx.clear();
+        gfx.fillStyle(0x050510, 0.88);
+        gfx.fillRect(bgLeft, bgTop, bgW, bgH);
+        gfx.lineStyle(1, 0x334466, 1);
+        gfx.strokeRect(bgLeft, bgTop, bgW, bgH);
+
+        const wm = game.tamer.worldMap;
+        for (let r = 0; r < 2; r++) {
+            for (let q = 0; q < TOTAL_COLS; q++) {
+                const cx = MM_X + (q + r * 0.5) * colStep;
+                const cy = MM_Y + r * rowStep;
+                gfx.fillStyle(wm.getAt(q, r) ? 0x3377bb : 0x111133, 1);
+                gfx.lineStyle(1, 0x223355, 0.7);
+                gfx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const a  = (Math.PI / 3) * i - Math.PI / 2;
+                    const px = cx + MM_R * Math.cos(a);
+                    const py = cy + MM_R * Math.sin(a);
+                    i === 0 ? gfx.moveTo(px, py) : gfx.lineTo(px, py);
+                }
+                gfx.closePath();
+                gfx.fillPath();
+                gfx.strokePath();
+            }
+        }
+
+        // 뷰포트 인디케이터
+        const mmW    = TOTAL_COLS * colStep;
+        const vpW    = (1280 / TOTAL_W) * mmW;
+        const vpLeft = bgLeft + (this.scrollX / TOTAL_W) * mmW;
+        gfx.lineStyle(2, 0xffee44, 0.95);
+        gfx.strokeRect(vpLeft, bgTop, vpW, bgH);
+        if (vpLeft + vpW > bgLeft + mmW) {
+            gfx.strokeRect(vpLeft - mmW, bgTop, vpW, bgH);
+        }
     }
 
     _updateMovement(delta) {
