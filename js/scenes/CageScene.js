@@ -281,16 +281,32 @@ class CageScene extends Phaser.Scene {
             const entry = this.digimonSprites.find(e => e.sprite === sprite);
             if (!entry) return;
 
-            // 드롭 위치를 월드 좌표로 변환 후 위치 저장
             const wx = screenToWorldX(pointer.x, this.scrollX);
             const wy = pointer.y - MAP_ROW_Y[0];
+
+            // 드롭 위치의 케이지 찾기
+            const hit = game.tamer.worldMap.placedCages.find(({ cage, anchorQ, anchorR }) => {
+                return game.tamer.worldMap.absoluteTiles(cage.id, anchorQ, anchorR)
+                    .some(([tq, tr]) => {
+                        const tp = tileWorldPos(tq, tr);
+                        return Math.hypot(wx - tp.x, wy - tp.y) < HEX_R * 0.9;
+                    });
+            });
+
+            if (hit && hit.cage !== entry.cage) {
+                // 다른 케이지로 이동
+                entry.cage.removeDigimon(entry.digimon);
+                if (hit.cage.canAdd(entry.digimon)) {
+                    hit.cage.addDigimon(entry.digimon);
+                    entry.cage     = hit.cage;
+                    entry.absTiles = game.tamer.worldMap.absoluteTiles(hit.cage.id, hit.anchorQ, hit.anchorR);
+                } else {
+                    entry.cage.addDigimon(entry.digimon); // 용량 초과 시 원래 케이지 복귀
+                }
+            }
+
             this.digimonWPos.set(entry.digimon, { x: wx, y: wy });
-            this._pickTarget(entry.digimon, entry.cage,
-                game.tamer.worldMap.absoluteTiles(entry.cage.id,
-                    game.tamer.worldMap.placedCages.find(e => e.cage === entry.cage)?.anchorQ ?? 0,
-                    game.tamer.worldMap.placedCages.find(e => e.cage === entry.cage)?.anchorR ?? 0
-                )
-            );
+            this._pickTarget(entry.digimon, entry.cage, entry.absTiles);
         });
     }
 
