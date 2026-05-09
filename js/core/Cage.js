@@ -50,10 +50,12 @@ class Cage {
             this.effect.forEach(eff => {
                 if (eff.type === 'recover') {
                     if (eff.stat === 'hp') {
-                        const prev = d.fatigue;
-                        d.fatigue = Math.max(0, d.fatigue - eff.amount);
-                        if (d.fatigue < prev) {
-                            game.addNotification(`${d.name}의 피로가 ${prev - d.fatigue} 회복됐습니다.`);
+                        const maxHp = DIGIMON_DATA[d.id].baseStats.hp;
+                        const prev  = d.currentStats.hp;
+                        d.currentStats.hp = Math.min(maxHp, d.currentStats.hp + eff.amount);
+                        const healed = d.currentStats.hp - prev;
+                        if (healed > 0) {
+                            game.addNotification(`${d.name}의 HP가 ${healed} 회복됐습니다.`);
                         }
                     }
                 } else if (eff.type === 'ap') {
