@@ -148,7 +148,7 @@ class CageScene extends Phaser.Scene {
         this.input.setDraggable(sprite);
         sprite.on('pointerdown', () => { this.selectedDigimon = digimon; });
 
-        this.digimonSprites.push({ digimon, cage, sprite });
+        this.digimonSprites.push({ digimon, cage, sprite, trackedId: digimon.id });
     }
 
     _pickNewTarget(digimon, cage) {
@@ -231,6 +231,10 @@ class CageScene extends Phaser.Scene {
         if (this.elapsed >= 1000) {
             this.elapsed = 0;
             game.onTick();
+        }
+        if (this.digimonSprites.some(e => e.digimon.id !== e.trackedId)) {
+            this.buildScene();
+            return;
         }
         this._updateMovement(delta);
         this._syncFoodSprites();
