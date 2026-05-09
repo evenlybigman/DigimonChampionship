@@ -21,9 +21,10 @@ class Digimon {
             dragon: 0, beast: 0, bird: 0, plant: 0, water: 0,
             holy: 0, dark: 0, machine: 0, virus: 0, vaccine: 0, data: 0,
         };
-        this.targetFood = null; // 현재 이동 중이거나 먹는 먹이 참조
-        this.isEating   = false;
-        this.eatTimer   = 0;
+        this.targetFood      = null;
+        this.isEating        = false;
+        this.eatTimer        = 0;
+        this.effectsReceived = {}; // { cageId: true } — AP 효과 수령 기록
     }
 
     update() {
@@ -58,6 +59,7 @@ class Digimon {
 
     train() {
         this.fatigue = Math.min(100, this.fatigue + 20);
+        this.currentStats.hp = Math.max(1, this.currentStats.hp - 10);
     }
 
     evolve(toId) {

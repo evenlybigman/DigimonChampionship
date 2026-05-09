@@ -47,6 +47,7 @@ class Cage {
     applyEffects() {
         if (!this.effect) return;
         this.digimonList.forEach(d => {
+            const hasAp = this.effect.some(e => e.type === 'ap');
             this.effect.forEach(eff => {
                 if (eff.type === 'recover') {
                     if (eff.stat === 'hp') {
@@ -59,13 +60,15 @@ class Cage {
                         }
                     }
                 } else if (eff.type === 'ap') {
-                    if (d.ap) {
+                    if (d.ap && !d.effectsReceived[this.id]) {
                         d.ap[eff.stat] = (d.ap[eff.stat] ?? 0) + eff.amount;
                         const label = AP_LABELS[eff.stat] ?? eff.stat;
                         game.addNotification(`${d.name}의 ${label} 속성이 ${eff.amount} 올랐습니다.`);
                     }
                 }
             });
+            // AP 효과가 있는 케이지면 수령 기록
+            if (hasAp) d.effectsReceived[this.id] = true;
         });
     }
 }
