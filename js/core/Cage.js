@@ -67,7 +67,6 @@ class Cage {
                     }
                 }
             });
-            // AP 효과가 있는 케이지면 수령 기록
             if (hasAp) d.effectsReceived[this.id] = true;
         });
     }
