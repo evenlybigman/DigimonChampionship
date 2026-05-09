@@ -1,12 +1,11 @@
-// 설정 화면 상수
-const S_HEX_R    = 55;                                        // 설정 화면 타일 크기
-const S_TOTAL_W  = 10 * S_HEX_R * Math.sqrt(3);              // ≈953px
-const S_MAP_X    = (1280 - S_TOTAL_W) / 2;                   // 좌측 여백
-const S_MAP_ROW_Y = [160, 160 + S_HEX_R * 1.5];              // r=0, r=1 Y
+const S_HEX_R     = 55;
+const S_TOTAL_W   = 10 * S_HEX_R * Math.sqrt(3);
+const S_MAP_X     = (1280 - S_TOTAL_W) / 2;
+const S_MAP_ROW_Y = [160, 160 + S_HEX_R * 1.5];
 
-const S_INV_Y    = 430; // 인벤토리 바 Y
-const S_INV_H    = 220;
-const S_CELL_R   = 40;  // 인벤토리 미리보기 타일 크기
+const S_INV_Y  = 430;
+const S_INV_H  = 220;
+const S_CELL_R = 40;
 
 function sTilePos(q, r) {
     return {
@@ -18,101 +17,96 @@ function sTilePos(q, r) {
 class CageSetupScene extends Phaser.Scene {
     constructor() {
         super({ key: 'CageSetupScene' });
-        this.dragging    = null;  // { cage, sprite, offsetX, offsetY } 드래그 중인 케이지
-        this.ghostGfx    = null;
-        this.invScrollX  = 0;
+        this.dragging     = null;
+        this.ghostGfx     = null;
         this.invDragStart = null;
-        this.mapGfx      = null;
-        this.invGfx      = null;
-        this.invCells    = [];    // { cage, x, y } 인벤토리 셀 위치
+        this.invScrollX   = 0;
+        this.mapGfx       = null;
+        this.invGfx       = null;
+        this.invCells     = [];
+        this.mapLabels    = []; // 맵 위 케이지 이름 텍스트 (rebuild 시 교체)
+        this.invLabels    = []; // 인벤토리 이름 텍스트 (rebuild 시 교체)
     }
 
     create() {
         this.add.rectangle(640, 360, 1280, 720, 0x0d0d1a);
 
         this.add.text(640, 20, '케이지 설정', {
-            fontSize: '26px', color: '#aabbff', align: 'center',
+            fontSize: '26px', color: '#aabbff',
         }).setOrigin(0.5, 0);
 
-        this.add.text(640, 58, '인벤토리에서 드래그해 맵에 올리거나, 맵의 케이지를 드래그해 제거하세요.',
-            { fontSize: '14px', color: '#778899', align: 'center' }
-        ).setOrigin(0.5, 0);
+        this.add.text(640, 58, '인벤토리에서 드래그해 맵에 올리거나, 맵의 케이지를 드래그해 위치를 바꾸거나 제거하세요.', {
+            fontSize: '13px', color: '#667788',
+        }).setOrigin(0.5, 0);
 
-        // 맵 영역
-        this.mapGfx = this.add.graphics();
-
-        // 인벤토리 영역
         this.add.rectangle(640, S_INV_Y + S_INV_H / 2, 1240, S_INV_H, 0x111122)
             .setStrokeStyle(1, 0x334466);
         this.add.text(20, S_INV_Y - 22, '보유 케이지', { fontSize: '14px', color: '#667788' });
 
-        this.invGfx = this.add.graphics();
-        this.ghostGfx = this.add.graphics().setDepth(20);
-
-        // 돌아가기 버튼
         const back = this.add.text(1240, 16, '✕  돌아가기', {
             fontSize: '18px', color: '#ffffff',
             backgroundColor: '#332244', padding: { x: 10, y: 6 },
         }).setInteractive({ useHandCursor: true });
         back.on('pointerdown', () => this.scene.start('CageScene'));
+        back.on('pointerover', () => back.setColor('#ffff00'));
+        back.on('pointerout',  () => back.setColor('#ffffff'));
+
+        this.mapGfx   = this.add.graphics();
+        this.invGfx   = this.add.graphics();
+        this.ghostGfx = this.add.graphics().setDepth(20);
 
         this._setupInput();
         this._buildMap();
         this._buildInventory();
     }
 
-    // ── 맵 렌더링 ───────────────────────────────────────────────
+    // ── 맵 렌더링 ──────────────────────────────────────────────
     _buildMap() {
-        const gfx = this.mapGfx;
-        gfx.clear();
+        this.mapLabels.forEach(t => t.destroy());
+        this.mapLabels = [];
+        this.mapGfx.clear();
 
         const wm = game.tamer.worldMap;
-
         for (let r = 0; r < 2; r++) {
             for (let q = 0; q < 10; q++) {
                 const p     = sTilePos(q, r);
                 const entry = wm.getAt(q, r);
 
                 if (entry) {
-                    gfx.fillStyle(0x1a2a50, 1);
-                    gfx.lineStyle(2, 0x4488dd, 1);
+                    this.mapGfx.fillStyle(0x1a2a50, 1);
+                    this.mapGfx.lineStyle(2, 0x4488dd, 1);
                 } else {
-                    gfx.fillStyle(0x0e0e22, 1);
-                    gfx.lineStyle(1, 0x223344, 0.8);
+                    this.mapGfx.fillStyle(0x0e0e22, 1);
+                    this.mapGfx.lineStyle(1, 0x223344, 0.8);
                 }
-                this._drawHex(gfx, p.x, p.y, S_HEX_R);
+                this._drawHex(this.mapGfx, p.x, p.y, S_HEX_R);
 
-                // 앵커 타일에 케이지 이름
                 if (entry && entry.anchorQ === q && entry.anchorR === r) {
-                    this.add.text(p.x, p.y, entry.cage.name, {
-                        fontSize: '10px', color: '#aaddff', align: 'center',
+                    const lbl = this.add.text(p.x, p.y, entry.cage.name, {
+                        fontSize: '10px', color: '#aaddff',
                     }).setOrigin(0.5).setDepth(2);
+                    this.mapLabels.push(lbl);
                 }
             }
         }
     }
 
-    // ── 인벤토리 렌더링 ──────────────────────────────────────────
+    // ── 인벤토리 렌더링 ────────────────────────────────────────
     _buildInventory() {
+        this.invLabels.forEach(t => t.destroy());
+        this.invLabels = [];
         this.invGfx.clear();
         this.invCells = [];
 
-        const inv = game.tamer.cageInventory;
+        const inv   = game.tamer.cageInventory;
         const cellW = 160;
-        const startX = 40 - this.invScrollX;
 
         inv.forEach((cage, i) => {
-            const cx = startX + i * cellW;
-            const cy = S_INV_Y + S_INV_H / 2 - 20;
-
-            // 화면 밖이면 건너뜀
+            const cx = 40 + i * cellW - this.invScrollX;
+            const cy = S_INV_Y + S_INV_H / 2 - 24;
             if (cx + cellW < 0 || cx - cellW > 1280) return;
 
-            // 케이지 미리보기 (타일 패턴)
-            const tiles = CAGE_DATA[cage.id].tiles;
-            const hw = S_CELL_R * Math.sqrt(3) / 2;
-            // 중심 기준으로 타일 그리기
-            tiles.forEach(([dq, dr]) => {
+            CAGE_DATA[cage.id].tiles.forEach(([dq, dr]) => {
                 const tx = cx + (dq + dr * 0.5) * S_CELL_R * Math.sqrt(3);
                 const ty = cy + dr * S_CELL_R * 1.5;
                 this.invGfx.fillStyle(0x223366, 1);
@@ -120,13 +114,18 @@ class CageSetupScene extends Phaser.Scene {
                 this._drawHex(this.invGfx, tx, ty, S_CELL_R);
             });
 
-            // 이름
-            this.add.text(cx, cy + S_CELL_R * 1.5 + 10, cage.name, {
-                fontSize: '12px', color: '#aabbcc', align: 'center',
+            const lbl = this.add.text(cx, cy + S_CELL_R * 1.5 + 10, cage.name, {
+                fontSize: '12px', color: '#aabbcc',
             }).setOrigin(0.5, 0).setDepth(2);
+            this.invLabels.push(lbl);
 
             this.invCells.push({ cage, x: cx, y: cy });
         });
+    }
+
+    _rebuild() {
+        this._buildMap();
+        this._buildInventory();
     }
 
     _drawHex(gfx, cx, cy, r) {
@@ -142,42 +141,41 @@ class CageSetupScene extends Phaser.Scene {
         gfx.strokePath();
     }
 
-    // 픽셀 위치 → 가장 가까운 맵 그리드 (q, r)
     _hitTestMap(px, py) {
         for (let r = 0; r < 2; r++) {
             for (let q = 0; q < 10; q++) {
-                const p  = sTilePos(q, r);
-                const dx = px - p.x;
-                const dy = py - p.y;
-                if (Math.hypot(dx, dy) < S_HEX_R * 0.9) return { q, r };
+                const p = sTilePos(q, r);
+                if (Math.hypot(px - p.x, py - p.y) < S_HEX_R * 0.9) return { q, r };
             }
         }
         return null;
     }
 
-    // ── 입력 처리 ────────────────────────────────────────────────
+    // ── 입력 처리 ──────────────────────────────────────────────
     _setupInput() {
         this.input.on('pointerdown', (pointer) => {
-            // 인벤토리 영역 드래그 시작 (케이지 픽업 or 스크롤)
             if (pointer.y >= S_INV_Y) {
+                // 인벤토리 영역
                 const hit = this.invCells.find(c =>
-                    Math.hypot(pointer.x - c.x, pointer.y - c.y) < S_CELL_R * 1.5
+                    Math.hypot(pointer.x - c.x, pointer.y - c.y) < S_CELL_R * 1.8
                 );
                 if (hit) {
-                    this._startDrag(hit.cage, pointer, false);
+                    this._startDrag(hit.cage, pointer);
                 } else {
                     this.invDragStart = { px: pointer.x, sx: this.invScrollX };
                 }
                 return;
             }
 
-            // 맵 영역 클릭 → 배치된 케이지 픽업
+            // 맵 영역 — 배치된 케이지 픽업
             const cell = this._hitTestMap(pointer.x, pointer.y);
             if (cell) {
                 const entry = game.tamer.worldMap.getAt(cell.q, cell.r);
                 if (entry) {
+                    // removeCage가 이미 인벤토리에 추가함
                     game.tamer.removeCage(entry.cage);
-                    this._startDrag(entry.cage, pointer, true);
+                    this._startDrag(entry.cage, pointer);
+                    this._rebuild();
                 }
             }
         });
@@ -187,15 +185,11 @@ class CageSetupScene extends Phaser.Scene {
                 this.invScrollX = Math.max(0,
                     this.invDragStart.sx - (pointer.x - this.invDragStart.px)
                 );
-                this._rebuildInv();
+                this._buildInventory();
                 return;
             }
-
             if (!this.dragging) return;
-            this.dragging.sprite.setPosition(
-                pointer.x + this.dragging.offsetX,
-                pointer.y + this.dragging.offsetY
-            );
+            this.dragging.sprite.setPosition(pointer.x, pointer.y);
             this._drawGhost(pointer.x, pointer.y);
         });
 
@@ -208,18 +202,21 @@ class CageSetupScene extends Phaser.Scene {
             this.ghostGfx.clear();
             this.dragging = null;
 
-            // 맵 위에 드롭
+            // 맵 위 드롭
             if (pointer.y < S_INV_Y) {
                 const cell = this._hitTestMap(pointer.x, pointer.y);
                 if (cell && game.tamer.worldMap.canPlace(cage.id, cell.q, cell.r)) {
-                    game.tamer.addCageToInventory(cage);
+                    // cage는 이미 인벤토리에 있음 (removeCage or 원래 인벤토리)
+                    if (!game.tamer.cageInventory.includes(cage)) {
+                        game.tamer.addCageToInventory(cage);
+                    }
                     game.tamer.placeCage(cage, cell.q, cell.r);
                     this._rebuild();
                     return;
                 }
             }
 
-            // 인벤토리로 복귀
+            // 드롭 실패 → 인벤토리 복귀 (이미 있으면 추가 안 함)
             if (!game.tamer.cageInventory.includes(cage)) {
                 game.tamer.addCageToInventory(cage);
             }
@@ -227,19 +224,20 @@ class CageSetupScene extends Phaser.Scene {
         });
     }
 
-    _startDrag(cage, pointer, fromMap) {
+    _startDrag(cage, pointer) {
+        if (this.dragging) { this.dragging.sprite.destroy(); }
+
         const spr = this.add.graphics().setDepth(21);
-        const tiles = CAGE_DATA[cage.id].tiles;
-        spr.fillStyle(0x3355aa, 0.8);
+        spr.fillStyle(0x3355aa, 0.85);
         spr.lineStyle(2, 0x66aaff, 1);
-        tiles.forEach(([dq, dr]) => {
+        CAGE_DATA[cage.id].tiles.forEach(([dq, dr]) => {
             const tx = (dq + dr * 0.5) * S_CELL_R * Math.sqrt(3);
             const ty = dr * S_CELL_R * 1.5;
             this._drawHex(spr, tx, ty, S_CELL_R);
         });
-
-        this.dragging = { cage, sprite: spr, offsetX: 0, offsetY: 0 };
         spr.setPosition(pointer.x, pointer.y);
+
+        this.dragging = { cage, sprite: spr };
     }
 
     _drawGhost(px, py) {
@@ -249,30 +247,15 @@ class CageSetupScene extends Phaser.Scene {
         const cell = this._hitTestMap(px, py);
         if (!cell) return;
 
-        const canPlace = game.tamer.worldMap.canPlace(this.dragging.cage.id, cell.q, cell.r);
-        const color    = canPlace ? 0x44ff88 : 0xff4444;
-        const alpha    = 0.35;
+        const ok    = game.tamer.worldMap.canPlace(this.dragging.cage.id, cell.q, cell.r);
+        const color = ok ? 0x44ff88 : 0xff4444;
 
-        const tiles = game.tamer.worldMap.absoluteTiles(this.dragging.cage.id, cell.q, cell.r);
-        this.ghostGfx.fillStyle(color, alpha);
-        this.ghostGfx.lineStyle(2, color, 0.8);
-        tiles.forEach(([tq, tr]) => {
-            const p = sTilePos(tq, tr);
-            this._drawHex(this.ghostGfx, p.x, p.y, S_HEX_R);
-        });
-    }
-
-    _rebuildInv() {
-        // invGfx 재그리기 (텍스트는 재생성 불가 → 전체 씬 재빌드)
-        this._rebuild();
-    }
-
-    _rebuild() {
-        // 텍스트 오브젝트 전부 정리 후 재생성
-        this.children.list
-            .filter(o => o.type === 'Text' && o !== this.children.list[0])
-            .forEach(o => o.destroy());
-        this._buildMap();
-        this._buildInventory();
+        this.ghostGfx.fillStyle(color, 0.35);
+        this.ghostGfx.lineStyle(2, color, 0.9);
+        game.tamer.worldMap.absoluteTiles(this.dragging.cage.id, cell.q, cell.r)
+            .forEach(([tq, tr]) => {
+                const p = sTilePos(tq, tr);
+                this._drawHex(this.ghostGfx, p.x, p.y, S_HEX_R);
+            });
     }
 }
