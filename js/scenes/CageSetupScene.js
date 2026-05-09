@@ -72,7 +72,10 @@ class CageSetupScene extends Phaser.Scene {
                 const p     = sTilePos(q, r);
                 const entry = wm.getAt(q, r);
 
-                if (entry) {
+                if (entry && entry.cage.id === 'default') {
+                    this.mapGfx.fillStyle(0x2a1a40, 1);
+                    this.mapGfx.lineStyle(2, 0xddaa22, 1); // 금색 — 잠금 표시
+                } else if (entry) {
                     this.mapGfx.fillStyle(0x1a2a50, 1);
                     this.mapGfx.lineStyle(2, 0x4488dd, 1);
                 } else {
@@ -167,11 +170,11 @@ class CageSetupScene extends Phaser.Scene {
                 return;
             }
 
-            // 맵 영역 — 배치된 케이지 픽업
+            // 맵 영역 — 배치된 케이지 픽업 (기본케이지는 고정)
             const cell = this._hitTestMap(pointer.x, pointer.y);
             if (cell) {
                 const entry = game.tamer.worldMap.getAt(cell.q, cell.r);
-                if (entry) {
+                if (entry && entry.cage.id !== 'default') {
                     // removeCage가 이미 인벤토리에 추가함
                     game.tamer.removeCage(entry.cage);
                     this._startDrag(entry.cage, pointer);

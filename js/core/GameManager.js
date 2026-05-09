@@ -16,7 +16,7 @@ class GameManager {
 
         const defaultCage = new Cage('default');
         this.tamer.addCageToInventory(defaultCage);
-        this.tamer.placeCage(defaultCage, 0, 0);
+        this.tamer.placeCage(defaultCage, 4, 0);
         this.tamer.addDigimon(new Digimon('putimon'), defaultCage);
 
         this.tamer.addCageToInventory(new Cage('mini_nurse'));
