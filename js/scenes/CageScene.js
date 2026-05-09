@@ -7,6 +7,7 @@ const CAGE_START_X = 20;
 const CAGE_START_Y = 100;
 const CARD_W       = 90;
 const CARD_H       = 100;
+const SPRITE_OFFSET_Y = -16; // 카드 중심 기준 스프라이트 오프셋
 
 const PANEL_X = 960;
 const PANEL_Y = 100;
@@ -16,16 +17,15 @@ const PANEL_H = 520;
 class CageScene extends Phaser.Scene {
     constructor() {
         super({ key: 'CageScene' });
-        this.elapsed       = 0;
-        this.cageZones     = []; // { cage, x, y, w, h, objects[] }
-        this.digimonCards  = []; // { digimon, cage, container, nameText }
-        this.digimonPos    = new Map(); // digimon -> { x, y } (절대 좌표)
+        this.elapsed        = 0;
+        this.cageZones      = []; // { cage, x, y, w, h, objects[] }
+        this.digimonCards   = []; // { digimon, cage, bg, sprite, nameText }
+        this.digimonPos     = new Map(); // digimon -> { x, y } 절대 좌표 (카드 중심)
         this.selectedDigimon = null;
     }
 
     create() {
         this.add.rectangle(640, 360, 1280, 720, 0x1a1a2e);
-
         this.dateText     = this.add.text(20, 40, '', { fontSize: '22px', color: '#ffffff' });
         this.capacityText = this.add.text(20, 70, '', { fontSize: '22px', color: '#ffffff' });
 
@@ -45,7 +45,7 @@ class CageScene extends Phaser.Scene {
             fontSize: '16px', color: '#aaaaff',
         });
 
-        this.panelText = this.add.text(PANEL_X + 10, PANEL_Y + 36, '', {
+        this.panelText   = this.add.text(PANEL_X + 10, PANEL_Y + 36, '', {
             fontSize: '18px', color: '#ffffff', lineSpacing: 10,
         });
         this.panelApText = this.add.text(PANEL_X + 10, PANEL_Y + 300, '', {
@@ -72,10 +72,15 @@ class CageScene extends Phaser.Scene {
     }
 
     buildScene() {
+        // 기존 카드 오브젝트 제거
+        this.digimonCards.forEach(c => {
+            c.bg.destroy();
+            c.sprite.destroy();
+            c.nameText.destroy();
+        });
         this.cageZones.forEach(z => z.objects.forEach(o => o.destroy()));
-        this.digimonCards.forEach(c => c.container.destroy());
-        this.cageZones  = [];
         this.digimonCards = [];
+        this.cageZones    = [];
 
         const tamer = game.tamer;
         if (!tamer) return;
@@ -99,11 +104,10 @@ class CageScene extends Phaser.Scene {
             });
 
             cage.digimonList.forEach((d, j) => {
-                // 저장된 위치 없으면 기본 배치
                 if (!this.digimonPos.has(d)) {
                     this.digimonPos.set(d, {
                         x: cx + CAGE_W / 2,
-                        y: cy + 60 + j * (CARD_H + 16),
+                        y: cy + 70 + j * (CARD_H + 16),
                     });
                 }
                 const pos = this.digimonPos.get(d);
@@ -115,48 +119,59 @@ class CageScene extends Phaser.Scene {
     _createCard(digimon, cage, x, y) {
         const isSelected = this.selectedDigimon === digimon;
 
-        const bg = this.add.rectangle(0, 0, CARD_W, CARD_H, isSelected ? 0x444488 : 0x2a2a55)
-            .setStrokeStyle(isSelected ? 2 : 1, isSelected ? 0xaaaaff : 0x5555aa);
+        const bg = this.add.rectangle(x, y, CARD_W, CARD_H,
+            isSelected ? 0x444488 : 0x2a2a55
+        ).setStrokeStyle(isSelected ? 2 : 1, isSelected ? 0xaaaaff : 0x5555aa);
 
         let sprite;
         if (this.textures.exists(digimon.id)) {
-            sprite = this.add.image(0, -16, digimon.id).setScale(0.5);
+            sprite = this.add.image(x, y + SPRITE_OFFSET_Y, digimon.id)
+                .setScale(0.5)
+                .setInteractive({ useHandCursor: true });
         } else {
-            sprite = this.add.rectangle(0, -16, 50, 50, 0x334455);
+            sprite = this.add.rectangle(x, y + SPRITE_OFFSET_Y, 50, 50, 0x334455)
+                .setInteractive({ useHandCursor: true });
         }
 
-        const nameText = this.add.text(0, 34, digimon.name, {
+        const nameText = this.add.text(x, y + 34, digimon.name, {
             fontSize: '12px', color: '#dddddd', align: 'center',
         }).setOrigin(0.5, 0);
 
-        const container = this.add.container(x, y, [bg, sprite, nameText]);
-        container.setInteractive(
-            new Phaser.Geom.Rectangle(-CARD_W / 2, -CARD_H / 2, CARD_W, CARD_H),
-            Phaser.Geom.Rectangle.Contains
-        );
-        this.input.setDraggable(container);
+        this.input.setDraggable(sprite);
 
-        container.on('pointerdown', () => {
+        sprite.on('pointerdown', () => {
             this.selectedDigimon = digimon;
             this.buildScene();
         });
 
-        this.digimonCards.push({ digimon, cage, container, nameText });
+        this.digimonCards.push({ digimon, cage, bg, sprite, nameText });
     }
 
     setupDrag() {
-        this.input.on('dragstart', (pointer, obj) => {
-            obj.setDepth(10);
-        });
-
-        this.input.on('drag', (pointer, obj, dragX, dragY) => {
-            obj.setPosition(dragX, dragY);
-        });
-
-        this.input.on('dragend', (pointer, obj) => {
-            obj.setDepth(0);
-            const card = this.digimonCards.find(c => c.container === obj);
+        this.input.on('dragstart', (pointer, sprite) => {
+            const card = this.digimonCards.find(c => c.sprite === sprite);
             if (!card) return;
+            card.bg.setDepth(10);
+            card.sprite.setDepth(11);
+            card.nameText.setDepth(10);
+        });
+
+        this.input.on('drag', (pointer, sprite, dragX, dragY) => {
+            const card = this.digimonCards.find(c => c.sprite === sprite);
+            if (!card) return;
+            const dx = dragX - card.sprite.x;
+            const dy = dragY - card.sprite.y;
+            card.sprite.setPosition(dragX, dragY);
+            card.bg.setPosition(card.bg.x + dx, card.bg.y + dy);
+            card.nameText.setPosition(card.nameText.x + dx, card.nameText.y + dy);
+        });
+
+        this.input.on('dragend', (pointer, sprite) => {
+            const card = this.digimonCards.find(c => c.sprite === sprite);
+            if (!card) return;
+            card.bg.setDepth(0);
+            card.sprite.setDepth(0);
+            card.nameText.setDepth(0);
 
             const { digimon, cage: srcCage } = card;
 
@@ -166,14 +181,17 @@ class CageScene extends Phaser.Scene {
             );
 
             if (!targetZone) {
-                // 케이지 밖 → 복귀
                 this.buildScene();
                 return;
             }
 
-            // 케이지 경계 안으로 클램프
-            const clampedX = Phaser.Math.Clamp(pointer.x, targetZone.x + CARD_W/2, targetZone.x + targetZone.w - CARD_W/2);
-            const clampedY = Phaser.Math.Clamp(pointer.y, targetZone.y + CARD_H/2, targetZone.y + targetZone.h - CARD_H/2);
+            // 카드 중심 = 스프라이트 위치 - offset
+            const newCX = Phaser.Math.Clamp(
+                card.sprite.x, targetZone.x + CARD_W / 2, targetZone.x + targetZone.w - CARD_W / 2
+            );
+            const newCY = Phaser.Math.Clamp(
+                card.sprite.y - SPRITE_OFFSET_Y, targetZone.y + CARD_H / 2, targetZone.y + targetZone.h - CARD_H / 2
+            );
 
             if (targetZone.cage !== srcCage) {
                 if (!game.tamer.canAdd(digimon, targetZone.cage)) {
@@ -184,7 +202,7 @@ class CageScene extends Phaser.Scene {
                 targetZone.cage.addDigimon(digimon);
             }
 
-            this.digimonPos.set(digimon, { x: clampedX, y: clampedY });
+            this.digimonPos.set(digimon, { x: newCX, y: newCY });
             this.buildScene();
         });
     }
@@ -216,7 +234,6 @@ class CageScene extends Phaser.Scene {
             this.panelApText.setText('');
             return;
         }
-
         this.panelText.setText([
             `${d.name}${d.isEating ? '  [먹는 중]' : ''}`,
             ``,
