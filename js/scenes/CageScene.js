@@ -17,7 +17,7 @@ const EAT_TICKS    = 5;
 const PANEL_X = 980;
 const PANEL_Y = 10;
 const PANEL_W = 290;
-const PANEL_H = 380;
+const PANEL_H = 440;
 
 // 미니맵
 const MM_R    = 11;                      // 미니맵 헥스 반지름(px)
@@ -101,7 +101,7 @@ class CageScene extends Phaser.Scene {
         this.panelText   = this.add.text(PANEL_X + 10, PANEL_Y + 10, '디지몬을 선택하세요.', {
             fontSize: '16px', color: '#ffffff', lineSpacing: 8,
         }).setDepth(11);
-        this.panelApText = this.add.text(PANEL_X + 10, PANEL_Y + 230, '', {
+        this.panelApText = this.add.text(PANEL_X + 10, PANEL_Y + 305, '', {
             fontSize: '13px', color: '#aaddff', lineSpacing: 6,
         }).setDepth(11);
     }
