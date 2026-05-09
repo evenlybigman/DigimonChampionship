@@ -498,8 +498,14 @@ class CageScene extends Phaser.Scene {
     _updateStatsPanel() {
         const d = this.selectedDigimon;
         if (!d) { this.panelText.setText('디지몬을 선택하세요.'); this.panelApText.setText(''); return; }
+        const s = d.currentStats;
         this.panelText.setText([
             `${d.name}${d.isEating ? ' [먹는 중]' : ''}`,
+            `No.${DIGIMON_DATA[d.id].no}  ${DIGIMON_DATA[d.id].stage}`,
+            ``,
+            `HP  ${s.hp}   MP  ${s.mp}`,
+            `공격 ${s.atk}  방어 ${s.def}`,
+            `속도 ${s.spd}`,
             ``,
             `배고픔 ${d.hunger}`,
             `피로   ${d.fatigue}`,
