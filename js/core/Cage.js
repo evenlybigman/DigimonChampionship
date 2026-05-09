@@ -45,7 +45,6 @@ class Cage {
 
     // 매 2틱마다 GameManager에서 호출
     applyEffects() {
-        if (!this.effect) return;
         this.digimonList.forEach(d => {
             if (d.pendingTraining) {
                 const prevHp = d.currentStats.hp;
@@ -55,6 +54,7 @@ class Cage {
                 d.pendingTraining = false;
             }
 
+            if (!this.effect) return;
             const hasAp = this.effect.some(e => e.type === 'ap');
             this.effect.forEach(eff => {
                 if (eff.type === 'recover') {
