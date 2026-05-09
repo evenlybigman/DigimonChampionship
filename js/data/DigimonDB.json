@@ -1,0 +1,82 @@
+{
+    "putimon": {
+        "id": "putimon",
+        "name": "푸티몬",
+        "level": 0,
+        "type": "Mini Angel",
+        "attribute": "none",
+        "capacity": 1,
+        "specialMove": ["Angel Dust"],
+        "baseStats": { "hp": 10, "mp": 10, "atk": 10, "def": 10, "spd": 10 }
+    },
+    "cupimon": {
+        "id": "cupimon",
+        "name": "큐피몬",
+        "level": 1,
+        "type": "Mini Angel",
+        "attribute": "none",
+        "capacity": 2,
+        "specialMove": ["Angel Ring"],
+        "baseStats": { "hp": 20, "mp": 20, "atk": 20, "def": 20, "spd": 20 }
+    },
+    "luxmon": {
+        "id": "luxmon",
+        "name": "럭스몬",
+        "level": 2,
+        "type": "Angel",
+        "attribute": "Vaccine",
+        "capacity": 10,
+        "specialMove": ["Tiny Knuckle", "Cloud Barrier"],
+        "baseStats": { "hp": 30, "mp": 30, "atk": 30, "def": 30, "spd": 30 }
+    },
+    "angelmon": {
+        "id": "angelmon",
+        "name": "엔젤몬",
+        "level": 3,
+        "type": "Angel",
+        "attribute": "Vaccine",
+        "capacity": 15,
+        "specialMove": ["Heaven's Knuckle"],
+        "baseStats": { "hp": 40, "mp": 40, "atk": 40, "def": 40, "spd": 40 }
+    },
+    "piddomon": {
+        "id": "piddomon",
+        "name": "피드몬",
+        "level": 3,
+        "type": "Angel",
+        "attribute": "Vaccine",
+        "capacity": 15,
+        "specialMove": ["Fire Phaser", "Pid Speed"],
+        "baseStats": { "hp": 40, "mp": 40, "atk": 40, "def": 40, "spd": 40 }
+    },
+    "darcmon": {
+        "id": "darcmon",
+        "name": "다르크몬",
+        "level": 3,
+        "type": "Angel",
+        "attribute": "Vaccine",
+        "capacity": 15,
+        "specialMove": ["La Pucelle", "Dancing Sword"],
+        "baseStats": { "hp": 40, "mp": 40, "atk": 40, "def": 40, "spd": 40 }
+    },
+    "magnaangemon": {
+        "id": "magnaangemon",
+        "name": "홀리엔젤몬",
+        "level": 4,
+        "type": "High Angel",
+        "attribute": "Vaccine",
+        "capacity": 21,
+        "specialMove": ["Heaven's Gate"],
+        "baseStats": { "hp": 50, "mp": 50, "atk": 50, "def": 50, "spd": 50 }
+    },
+    "angewomon": {
+        "id": "angewomon",
+        "name": "엔젤우몬",
+        "level": 4,
+        "type": "High Angel",
+        "attribute": "Vaccine",
+        "capacity": 21,
+        "specialMove": ["Celestial Arrow", "Heaven's Charm"],
+        "baseStats": { "hp": 50, "mp": 50, "atk": 50, "def": 50, "spd": 50 }
+    }
+}

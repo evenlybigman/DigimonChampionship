@@ -3,13 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <title>Digimon Championship</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    * { margin: 0; padding: 0; }
+    body { background: #000; overflow: hidden; }
+    canvas { display: block; margin: 0 auto; }
+  </style>
 </head>
 <body>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 
-  <!-- 나중에 UI 들어올 자리 -->
+  <script src="js/data/evolution.js"></script>
+  <script src="js/core/constants.js"></script>
+  <script src="js/core/Digimon.js"></script>
+  <script src="js/core/Cage.js"></script>
+  <script src="js/core/Tamer.js"></script>
+  <script src="js/core/EvolutionSystem.js"></script>
+  <script src="js/core/GameManager.js"></script>
 
-  <script src="js/data/digimon.js"></script>
-  <script src="js/core/game.js"></script>
+  <script src="js/scenes/BootScene.js"></script>
+  <script src="js/scenes/TitleScene.js"></script>
+  <script src="js/scenes/CageScene.js"></script>
+  <script src="js/scenes/BattleScene.js"></script>
+
+  <script src="js/main.js"></script>
 </body>
 </html>
