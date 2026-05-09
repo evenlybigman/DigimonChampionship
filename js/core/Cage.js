@@ -47,6 +47,14 @@ class Cage {
     applyEffects() {
         if (!this.effect) return;
         this.digimonList.forEach(d => {
+            if (d.pendingTraining) {
+                const prevHp = d.currentStats.hp;
+                d.train();
+                const lost = prevHp - d.currentStats.hp;
+                if (lost > 0) game.addNotification(`${d.name}의 HP가 ${lost} 감소했습니다.`);
+                d.pendingTraining = false;
+            }
+
             const hasAp = this.effect.some(e => e.type === 'ap');
             this.effect.forEach(eff => {
                 if (eff.type === 'recover') {

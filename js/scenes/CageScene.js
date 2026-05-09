@@ -298,14 +298,9 @@ class CageScene extends Phaser.Scene {
                 if (hit.cage.canAdd(entry.digimon)) {
                     hit.cage.addDigimon(entry.digimon);
 
-                    // 이미 방문한 케이지로 복귀 시 훈련 효과
+                    // 이미 방문한 케이지로 복귀 시 2틱 후 훈련 효과 예약
                     if (entry.digimon.effectsReceived[hit.cage.id]) {
-                        const prevHp = entry.digimon.currentStats.hp;
-                        entry.digimon.train();
-                        const lost = prevHp - entry.digimon.currentStats.hp;
-                        if (lost > 0) {
-                            game.addNotification(`${entry.digimon.name}의 HP가 ${lost} 감소했습니다.`);
-                        }
+                        entry.digimon.pendingTraining = true;
                     }
 
                     entry.cage     = hit.cage;
